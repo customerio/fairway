@@ -32,99 +32,79 @@ commands are processed atomically.  A LUA script does that.
 there's very low latency for each redis command.  So, the script executes
 much faster than if we made each call independantly over the network.
 
-### LUA script for processing messages through the backbone
+This means your Redis version must be `>= 2.6.0`
 
-Usage:
+# Usage
 
-    redis.eval(
-      process_message_script,
-      [5, "email_event", "opened_email"],
-      [{ environment_id: 5, type: "email_event", name: "opened_email" }]
-    )
+1. Add driver to your Gemfile
 
-Code:
+    gem 'driver', git: 'git@github.com:customerio/driver.git'
 
-    local environment  = KEYS[1];
-    local type         = KEYS[2];
-    local name         = KEYS[3];
-    local message      = ARGV[1];
+Make sure to `bundle install`.
 
-    local message_topic = environment .. ':' .. type .. ':' .. name;
+1. Configure driver
 
-    -- send pub/sub notification of message
+    Driver.configure do |config|
+      config.redis     = { host: "yourserver.com", port: 6379 }
+      config.namespace = "letsdrive"
+    end
 
-    redis.call('publish', message_topic, message);
+If you don't configure, it'll default to:
 
-    -- retrieve registered message queues
+    Driver.configure do |config|
+      config.redis     = { host: "localhost", port: 6379 }
+      config.namespace = nil
+    end
 
-    local registered_queues = redis.call('smembers', 'registered_queues');
+1. Create a client
 
-    for i = 1, #registered_queues do
-      local queue_parts   = split(registered_queues[i], '|');
-      local queue_name    = queue_parts[1];
-      local queue_message = queue_parts[2];
+   client = Driver::Client.new
 
-      -- if queue matches the message topic, queue message for environment facet
+1. Send messages
 
-      if message_topic.find(queue_message) then
-        local facet_queue = queue_name .. ':' .. environment;
+    client.deliver(environment_id: 1, type: :page, name: "http://customer.io/blog", referrer: "http://customer.io")
 
-        redis.call('lpush', facet_queue, message)
+You can pass any hash of data you'd like with the following requirements:
 
-        if not redis.call('sismember', queue_name .. ':facets', facet_queue) then
-          -- add facet to list of awaiting facets
+* It must have an `environment_id` (used for faceting and round-robin processing)
+* It must have a message `type`
+* It must have a message `name`
 
-          redis.call('sadd', queue_name .. ':facets', facet_queue);
-          redis.call('lpush', queue_name .. ':facet_order', facet_queue);
-        end
+These three pieces of data make up the message's `message_topic` which
+can be useful if you'd like to listen for, or process, messages.
+
+1. Listen for messages
+
+If a message is sent in the middle of the forest, and no one is listening, did it make a sound?
+
+You can listen for messages that are delivered by driver by subscribing to message topics:
+
+    client.redis.psubscribe("*:page:*google*") do |on|
+      on.pmessage do |pattern, channel, message|
+        puts "[#{channel}] #{message}"
       end
     end
 
-### LUA script for retrieving a queued message
+This will listen for any page events with google in the name.
 
-Usage: `redis.eval(pull_message_script, ["email_events"])`
+Now, if you deliver a message, it'll be printed out on the console.
 
-    local queue_name  = KEYS[1];
+*Note:* redis psubscribe is blocking. So, you'll need multiple console windows open.
+One to deliver the message, and one to listen for them.
 
-    -- find next facet we should pull from
+1. Create a queue
 
-    local facet_queue = redis.call('rpop', queue_name .. ':facet_order');
+Ok, so now you can listen to messages, but what if your listener dies and you miss all your important messages?
 
-    -- pull message off of facet queue
+Not to worry, you can tell driver to queue up any messages you want to know about.
 
-    local message = redis.call('rpop', facet_queue);
+    client.register_queue("myqueue", ".*:page:.*google.*")
 
-    if redis.call('llen', facet_queue) == 0 then
-      -- remove facet from the queue's facets
+Now driver will deliver all page events with google in the name to the queue named `myqueue`. To retrieve messages
+in your queue:
 
-      redis.call('srem', queue_name .. ':facets', facet_queue);
-    else
-      -- push facet back on the facet ordering queue
+    message = client.pull("myqueue")
 
-      redis.call('lpush', queue_name .. ':facet_order', facet_queue);
-    end
+This will return a message or nil (if no messages are queued).
 
-    return message;
-
-# Services
-
-## Responsibilities
-
-* Subscribe to published messages
-* Register messages to queue
-* Pull messages off of queue and process them
-
-### Ruby script for subscribing to event notifications
-
-    redis.psubscribe('*:page:*') do
-      # do something with each page view for any environment
-    end
-
-### LUA script for registering event types to be queued
-
-Usage: `redis.eval(create_queue_script, ["email_events", ".*:email_event:.*"])`
-
-    local queue_name    = KEYS[1];
-    local queue_message = KEYS[2];
-
-    redis.call('sadd', 'registered_queues', queue_name .. '|' .. queue_message);
+*Note:* `pull` is facet aware, and will rotate through all facets with queued messages.
