@@ -58,7 +58,7 @@ If you don't configure, it'll default to:
 
 ##### Create a client
 
-   client = Driver::Client.new
+    client = Driver::Client.new
 
 ##### Send messages
 
@@ -75,7 +75,7 @@ can be useful if you'd like to listen for, or process, messages.
 
 ##### Listen for messages
 
-If a message is sent in the middle of the forest, and no one is listening, did it make a sound?
+If a message is sent in the middle of the forest, and no one is listening, was it ever really sent?
 
 You can listen for messages that are delivered by driver by subscribing to message topics:
 
@@ -101,7 +101,7 @@ Not to worry, you can tell driver to queue up any messages you want to know abou
     client.register_queue("myqueue", ".*:page:.*google.*")
 
 Now driver will deliver all page events with google in the name to the queue named `myqueue`. To retrieve messages
-in your queue:
+from your queue:
 
     message = client.pull("myqueue")
 
