@@ -34,15 +34,15 @@ much faster than if we made each call independantly over the network.
 
 This means your Redis version must be `>= 2.6.0`
 
-# Usage
+### Usage
 
-1. Add driver to your Gemfile
+ Add driver to your Gemfile
 
     gem 'driver', git: 'git@github.com:customerio/driver.git'
 
 Make sure to `bundle install`.
 
-1. Configure driver
+##### Configure driver
 
     Driver.configure do |config|
       config.redis     = { host: "yourserver.com", port: 6379 }
@@ -56,11 +56,11 @@ If you don't configure, it'll default to:
       config.namespace = nil
     end
 
-1. Create a client
+##### Create a client
 
    client = Driver::Client.new
 
-1. Send messages
+##### Send messages
 
     client.deliver(environment_id: 1, type: :page, name: "http://customer.io/blog", referrer: "http://customer.io")
 
@@ -73,7 +73,7 @@ You can pass any hash of data you'd like with the following requirements:
 These three pieces of data make up the message's `message_topic` which
 can be useful if you'd like to listen for, or process, messages.
 
-1. Listen for messages
+##### Listen for messages
 
 If a message is sent in the middle of the forest, and no one is listening, did it make a sound?
 
@@ -92,7 +92,7 @@ Now, if you deliver a message, it'll be printed out on the console.
 *Note:* redis psubscribe is blocking. So, you'll need multiple console windows open.
 One to deliver the message, and one to listen for them.
 
-1. Create a queue
+##### Create a queue
 
 Ok, so now you can listen to messages, but what if your listener dies and you miss all your important messages?
 
