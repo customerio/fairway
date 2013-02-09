@@ -56,13 +56,13 @@ If you don't configure, it'll default to:
       config.namespace = nil
     end
 
-##### Create a client
+##### Create an instance of driver
 
-    client = Driver::Client.new
+    driver = Driver::Client.new
 
 ##### Send messages
 
-    client.deliver(environment_id: 1, type: :page, name: "http://customer.io/blog", referrer: "http://customer.io")
+    driver.deliver(environment_id: 1, type: :page, name: "http://customer.io/blog", referrer: "http://customer.io")
 
 You can pass any hash of data you'd like with the following requirements:
 
@@ -79,7 +79,7 @@ If a message is sent in the middle of the forest, and no one is listening, was i
 
 You can listen for messages that are delivered by driver by subscribing to message topics:
 
-    client.redis.psubscribe("*:page:*google*") do |on|
+    driver.redis.psubscribe("*:page:*google*") do |on|
       on.pmessage do |pattern, channel, message|
         puts "[#{channel}] #{message}"
       end
@@ -98,12 +98,12 @@ Ok, so now you can listen to messages, but what if your listener dies and you mi
 
 Not to worry, you can tell driver to queue up any messages you want to know about.
 
-    client.register_queue("myqueue", ".*:page:.*google.*")
+    driver.register_queue("myqueue", ".*:page:.*google.*")
 
 Now driver will deliver all page events with google in the name to the queue named `myqueue`. To retrieve messages
 from your queue:
 
-    message = client.pull("myqueue")
+    message = driver.pull("myqueue")
 
 This will return a message or nil (if no messages are queued).
 
