@@ -4,5 +4,6 @@ source :rubygems
 gemspec
 
 group :test do
+  gem "sidekiq"
   gem "rspec"
 end

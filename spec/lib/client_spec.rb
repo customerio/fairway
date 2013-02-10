@@ -142,6 +142,37 @@ module Driver
         client.pull("myqueue").should == message.to_json
         client.pull("myqueue").should be_nil
       end
+
+      context "pulling from multiple queues" do
+        before do
+          client.register_queue("myqueue1", ".*:event:1")
+          client.register_queue("myqueue2", ".*:event:2")
+        end
+
+        it "pulls messages off first queue with a message" do
+          client.deliver(message1 = message.merge(name: 1))
+          client.deliver(message2 = message.merge(name: 2))
+
+          client.pull(["myqueue2", "myqueue1"]).should == message2.to_json
+          client.pull(["myqueue2", "myqueue1"]).should == message1.to_json
+        end
+
+        it "returns nil if no queues have messages" do
+          client.pull(["myqueue2", "myqueue1"]).should be_nil
+        end
+
+        it "pulls from facets of the queue in a round-robin nature" do
+          client.deliver(message1 = message.merge(environment_id: 1, name: 1))
+          client.deliver(message2 = message.merge(environment_id: 1, name: 1))
+          client.deliver(message3 = message.merge(environment_id: 2, name: 1))
+          client.deliver(message4 = message.merge(environment_id: 1, name: 2))
+
+          client.pull(["myqueue2", "myqueue1"]).should == message4.to_json
+          client.pull(["myqueue2", "myqueue1"]).should == message1.to_json
+          client.pull(["myqueue2", "myqueue1"]).should == message3.to_json
+          client.pull(["myqueue2", "myqueue1"]).should == message2.to_json
+        end
+      end
     end
   end
 end

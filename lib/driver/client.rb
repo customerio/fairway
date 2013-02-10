@@ -8,8 +8,9 @@ module Driver
       raw_redis.eval(REGISTER_QUEUE, [namespace], [name, topic])
     end
 
-    def pull(queue)
-      raw_redis.eval(PULL_QUEUE, [namespace], [queue])
+    def pull(queues)
+      queues = [queues].flatten
+      raw_redis.eval(PULL_QUEUE, [namespace], queues)
     end
 
     def redis
