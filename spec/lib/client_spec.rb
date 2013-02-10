@@ -5,7 +5,7 @@ module Driver
     let(:client) { Client.new }
     let(:redis)  { client.redis }
 
-    let(:message) { { environment_id: 1, type: "event", name: "helloworld" } }
+    let(:message) { { facet: 1, topic: "event:helloworld" } }
 
 
     it "uses the driver's config to build a redis connection" do
@@ -40,7 +40,7 @@ module Driver
 
           on.pmessage do |pattern, channel, received_message|
             received_message.should == message.to_json
-            channel.should == "#{client.redis.namespace}:1:event:helloworld"
+            channel.should == "#{client.redis.namespace}:event:helloworld"
             connection.punsubscribe(pattern)
           end
         end
@@ -48,7 +48,7 @@ module Driver
       
       context "registered queue exists for message type" do
         before do
-          client.register_queue("myqueue", ".*:event:helloworld")
+          client.register_queue("myqueue", "event:helloworld")
         end
 
         it "adds message to the environment facet for the queue" do
@@ -59,17 +59,17 @@ module Driver
 
         it "adds facet to list of active facets" do
           client.deliver(message)
-          redis.smembers("myqueue:active_facets").should == ["myqueue:1"]
+          redis.smembers("myqueue:active_facets").should == ["1"]
         end
 
         it "pushes facet onto facet queue" do
           client.deliver(message)
           redis.llen("myqueue:facet_queue").should == 1
-          redis.lindex("myqueue:facet_queue", 0).should == "myqueue:1"
+          redis.lindex("myqueue:facet_queue", 0).should == "1"
         end
 
         it "doesn't push onto to facet queue if currently active" do
-          redis.sadd("myqueue:active_facets", "myqueue:1")
+          redis.sadd("myqueue:active_facets", "1")
           client.deliver(message)
           redis.llen("myqueue:facet_queue").should == 0
         end
@@ -77,8 +77,8 @@ module Driver
 
       context "multiple queues exist for message type" do
         before do
-          client.register_queue("myqueue", ".*:.*:helloworld")
-          client.register_queue("yourqueue", ".*:event:.*world")
+          client.register_queue("myqueue", ".*:helloworld")
+          client.register_queue("yourqueue", "event:.*world")
         end
 
         it "adds message for both queues" do
@@ -90,7 +90,7 @@ module Driver
 
       context "registered queue exists for another message type" do
         before do
-          client.register_queue("myqueue", ".*:email:helloworld")
+          client.register_queue("myqueue", "email:helloworld")
         end
 
         it "doesn't add message to the queue" do
@@ -107,7 +107,7 @@ module Driver
 
     describe "#pull" do
       before do
-        client.register_queue("myqueue", ".*:event:helloworld")
+        client.register_queue("myqueue", "event:helloworld")
       end
 
       it "pulls a message off the queue using FIFO strategy" do
@@ -119,9 +119,9 @@ module Driver
       end
 
       it "pulls from facets of the queue in a round-robin nature" do
-        client.deliver(message1 = message.merge(environment_id: 1, message: 1))
-        client.deliver(message2 = message.merge(environment_id: 1, message: 2))
-        client.deliver(message3 = message.merge(environment_id: 2, message: 3))
+        client.deliver(message1 = message.merge(facet: 1, message: 1))
+        client.deliver(message2 = message.merge(facet: 1, message: 2))
+        client.deliver(message3 = message.merge(facet: 2, message: 3))
 
         client.pull("myqueue").should == message1.to_json
         client.pull("myqueue").should == message3.to_json
@@ -131,7 +131,7 @@ module Driver
       it "removes facet from active list if it becomes empty" do
         client.deliver(message)
 
-        redis.smembers("myqueue:active_facets").should == ["myqueue:1"]
+        redis.smembers("myqueue:active_facets").should == ["1"]
         client.pull("myqueue")
         redis.smembers("myqueue:active_facets").should be_empty
       end
@@ -145,13 +145,13 @@ module Driver
 
       context "pulling from multiple queues" do
         before do
-          client.register_queue("myqueue1", ".*:event:1")
-          client.register_queue("myqueue2", ".*:event:2")
+          client.register_queue("myqueue1", "event:1")
+          client.register_queue("myqueue2", "event:2")
         end
 
         it "pulls messages off first queue with a message" do
-          client.deliver(message1 = message.merge(name: 1))
-          client.deliver(message2 = message.merge(name: 2))
+          client.deliver(message1 = message.merge(topic: "event:1"))
+          client.deliver(message2 = message.merge(topic: "event:2"))
 
           client.pull(["myqueue2", "myqueue1"]).should == message2.to_json
           client.pull(["myqueue2", "myqueue1"]).should == message1.to_json
@@ -162,10 +162,10 @@ module Driver
         end
 
         it "pulls from facets of the queue in a round-robin nature" do
-          client.deliver(message1 = message.merge(environment_id: 1, name: 1))
-          client.deliver(message2 = message.merge(environment_id: 1, name: 1))
-          client.deliver(message3 = message.merge(environment_id: 2, name: 1))
-          client.deliver(message4 = message.merge(environment_id: 1, name: 2))
+          client.deliver(message1 = message.merge(facet: 1, topic: "event:1"))
+          client.deliver(message2 = message.merge(facet: 1, topic: "event:1"))
+          client.deliver(message3 = message.merge(facet: 2, topic: "event:1"))
+          client.deliver(message4 = message.merge(facet: 1, topic: "event:2"))
 
           client.pull(["myqueue2", "myqueue1"]).should == message4.to_json
           client.pull(["myqueue2", "myqueue1"]).should == message1.to_json

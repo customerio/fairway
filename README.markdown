@@ -2,23 +2,26 @@
 
 ## Responsibilities
 
-* Consume events from various sources
-* Publish events for services who are listening
-* adds events to queues which services have registered
-* keeps track of which environments have events queued
-* allows messages to be pulled off of queues in round-robin by environment
+* Allow consumption of messages from various sources
+* Publish messages for services who are listening
+* adds messages to queues which services have registered
+* keeps track of which facets have messages queued
+* allows messages to be pulled off of queues in round-robin by facet
 
 ### Queue structure
 
 Once a service registers a queue, with a regex for what messages should be
 added to the queue, the backbone will begin pushing matching messages onto the queue.
 
-In order to make sure one environment doesn't back up the queue for everyone else,
-each queue as a number of "facets", one for each environment with queued messages.
+In some cases, queuing systems can have problems in multi-user systems. If one user
+queues up a ton of messages, messages for other users may be delayed.
+
+Driver solves that by allowing "facets" for each queue, which can be set to a facet
+for each user.
 
 Each facet is added to a list if it has messages waiting to be processed. This list
 is used to enforce a round-robin stategy for pulling messages off of the queue. This
-means we'll process one message for every environment which has messages queued, before
+means we'll process one message for every facet which has messages queued, before
 looping back and processing additional messages.
 
 ### Redis LUA scripting
@@ -47,6 +50,14 @@ Make sure to `bundle install`.
     Driver.configure do |config|
       config.redis     = { host: "yourserver.com", port: 6379 }
       config.namespace = "letsdrive"
+
+      config.facet do |message|
+        message[:user_id]
+      end
+
+      config.topic do |message|
+        "#{message[:user_id]}:#{message[:type]}"
+      end
     end
 
 If you don't configure, it'll default to:
@@ -54,6 +65,14 @@ If you don't configure, it'll default to:
     Driver.configure do |config|
       config.redis     = { host: "localhost", port: 6379 }
       config.namespace = nil
+
+      config.facet do |message|
+        message[:facet]
+      end
+
+      config.topic do |message|
+        message[:topic]
+      end
     end
 
 ##### Create an instance of driver
@@ -62,16 +81,10 @@ If you don't configure, it'll default to:
 
 ##### Send messages
 
-    driver.deliver(environment_id: 1, type: :page, name: "http://customer.io/blog", referrer: "http://customer.io")
+    driver.deliver(facet: 1, type: :page, name: "http://customer.io/blog", referrer: "http://customer.io")
 
-You can pass any hash of data you'd like with the following requirements:
-
-* It must have an `environment_id` (used for faceting and round-robin processing)
-* It must have a message `type`
-* It must have a message `name`
-
-These three pieces of data make up the message's `message_topic` which
-can be useful if you'd like to listen for, or process, messages.
+You can pass any hash of data you'd like. Using the default configuration, this message will have a topic
+of `page`, which can useful if you'd like to listen for, or process, messages.
 
 ##### Listen for messages
 
@@ -79,13 +92,13 @@ If a message is sent in the middle of the forest, and no one is listening, was i
 
 You can listen for messages that are delivered by driver by subscribing to message topics:
 
-    driver.redis.psubscribe("*:page:*google*") do |on|
+    driver.redis.psubscribe("page:*google*") do |on|
       on.pmessage do |pattern, channel, message|
         puts "[#{channel}] #{message}"
       end
     end
 
-This will listen for any page events with google in the name.
+If you've configured your topic to be `"#{message[:type]}:#{message[:name]}`, this will listen for any page events with google in the name.
 
 Now, if you deliver a message, it'll be printed out on the console.
 

@@ -1,7 +1,15 @@
 module Driver
   class Client
     def deliver(message)
-      raw_redis.eval(DELIVER_MESSAGE, [namespace], [message[:environment_id], message[:type], message[:name], message.to_json])
+      raw_redis.eval(
+        DELIVER_MESSAGE,
+        [namespace],
+        [
+          Driver.config.topic_for(message),
+          Driver.config.facet_for(message),
+          message.to_json
+        ]
+      )
     end
 
     def register_queue(name, topic)

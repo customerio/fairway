@@ -9,9 +9,10 @@ module Driver
       local facet = redis.call('rpop', facet_queue);
 
       if facet then
-        local message = redis.call('rpop', namespace .. facet);
+        local message_queue = namespace .. queue_name .. ':' .. facet;
+        local message = redis.call('rpop', message_queue);
 
-        if redis.call('llen', namespace .. facet) == 0 then
+        if redis.call('llen', message_queue) == 0 then
           redis.call('srem', active_facets, facet);
         else
           redis.call('lpush', facet_queue, facet);
