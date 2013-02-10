@@ -2,6 +2,11 @@ require "spec_helper"
 
 module Driver
   describe Config do
+    describe "#register_queue" do
+      it "requires a name"
+      it "accepts a channel"
+    end
+
     it "allows setting of redis connection options" do
       Driver.configure do |config|
         config.redis = { host: "127.0.0.1", port: 6379 }
@@ -17,7 +22,7 @@ module Driver
 
       Driver.config.namespace.should == "driver:backbone"
     end
-    
+
     it "sets the default facet" do
       Driver.config.facet_for(environment_id: 5, facet: 1).should == 1
     end
