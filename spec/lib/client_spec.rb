@@ -23,9 +23,9 @@ module Driver
       it "adds queue to the set of registered queues" do
         client.register_queue("myqueue", ".*")
 
-        redis.smembers("registered_queues").should == [
-          "myqueue|.*"
-        ]
+        redis.hgetall("registered_queues").should == {
+          "myqueue" => ".*"
+        }
       end
     end
 

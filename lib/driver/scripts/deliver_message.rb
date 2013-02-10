@@ -7,34 +7,27 @@ module Driver
     local message       = ARGV[4];
     local message_topic = environment .. ':' .. type .. ':' .. name;
 
-    local registered_queues_key = namespace .. ':registered_queues';
-    local registered_queues     = redis.call('smembers', registered_queues_key);
+    local registered_queues_key = namespace .. 'registered_queues';
+    local registered_queues     = redis.call('hgetall', registered_queues_key);
 
-    for i = 1, #registered_queues do
-      local queue_parts = {}
-
-      for part in string.gmatch(registered_queues[i], "[^|]+") do
-        table.insert(queue_parts, part)
-      end
-
-      local queue_name    = queue_parts[1];
-      local queue_message = queue_parts[2];
+    for i = 1, #registered_queues, 2 do
+      local queue_name    = registered_queues[i];
+      local queue_message = registered_queues[i+1];
 
       if string.find(message_topic, queue_message) then
         local facet         = queue_name .. ':' .. environment;
-        local active_facets = namespace  .. ':' .. queue_name .. ':active_facets';
-        local facet_queue   = namespace  .. ':' .. queue_name .. ':facet_queue';
+        local active_facets = namespace .. queue_name .. ':active_facets';
+        local facet_queue   = namespace .. queue_name .. ':facet_queue';
 
-        redis.call('lpush', namespace .. ':' .. facet, message)
+        redis.call('lpush', namespace .. facet, message)
 
-        if redis.call('sismember', active_facets, facet) == 0 then
-          redis.call('sadd', active_facets, facet);
+        if redis.call('sadd', active_facets, facet) == 1 then
           redis.call('lpush', facet_queue, facet);
         end
       end
     end
 
-    redis.call('publish', namespace .. ':' .. message_topic, message);
+    redis.call('publish', namespace .. message_topic, message);
   SCRIPT
 end
 

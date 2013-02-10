@@ -14,14 +14,18 @@ module Driver
 
     def redis
       @redis ||= begin
-         Redis::Namespace.new(namespace, redis: raw_redis)
+         Redis::Namespace.new(Driver.config.namespace, redis: raw_redis)
       end
     end
 
     private
 
     def namespace
-      Driver.config.namespace
+      if Driver.config.namespace.blank?
+        ""
+      else
+        "#{Driver.config.namespace}:"
+      end
     end
 
     def raw_redis
