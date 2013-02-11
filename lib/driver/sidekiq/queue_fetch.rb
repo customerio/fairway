@@ -14,7 +14,8 @@ module Driver
 
         if work = @queue_reader.pull
           work = @message_to_job.call(work) if @message_to_job
-          unit_of_work = UnitOfWork.new(work["queue"], work)
+          decoded_work = JSON.parse(work)
+          unit_of_work = UnitOfWork.new(decoded_work["queue"], work)
         end
 
         if unit_of_work
