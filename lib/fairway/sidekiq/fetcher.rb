@@ -1,6 +1,8 @@
 module Fairway
   module Sidekiq
     class Fetcher < ::Sidekiq::Fetcher
+      attr_reader :mgr, :strategy
+
       def initialize(mgr, fetch)
         @mgr = mgr
         @strategy = fetch

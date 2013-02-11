@@ -13,8 +13,8 @@ module Fairway
         unit_of_work = nil
 
         if work = @queue_reader.pull
-          work = @message_to_job.call(work) if @message_to_job
           decoded_work = JSON.parse(work)
+          work = @message_to_job.call(decoded_work).to_json if @message_to_job
           unit_of_work = UnitOfWork.new(decoded_work["queue"], work)
         end
 

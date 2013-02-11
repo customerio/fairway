@@ -1,14 +1,10 @@
 module Fairway
   module Sidekiq
     class NonBlockingFetch < ::Sidekiq::BasicFetch
-      def initialize(queues)
-        @queues = []
+      attr_reader :queues
 
-        queues.each do |queue, weight|
-          [weight.to_i, 1].max.times do
-            @queues << "queue:#{queue}"
-          end
-        end
+      def initialize(options)
+        @queues = options[:queues].map { |q| "queue:#{q}" }
       end
 
       def retrieve_work
