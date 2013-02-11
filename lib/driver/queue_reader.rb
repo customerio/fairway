@@ -8,6 +8,5 @@ module Driver
     def pull
       @connection.scripts.driver_pull(@queue_names)
     end
-
   end
 end

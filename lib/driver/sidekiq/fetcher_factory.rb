@@ -7,8 +7,8 @@ module Driver
       end
 
       def new(mgr, options)
-        queue_fetch = QueueFetch.new(driver_queue_reader)
-        non_blocking_fetch = NonBlockingFetch.new(sidekiq_queues)
+        queue_fetch = QueueFetch.new(@driver_queue_reader)
+        non_blocking_fetch = NonBlockingFetch.new(@sidekiq_queues)
         fetch = CompositeFetch.new(queue_fetch => 10, non_blocking_fetch => 1)
         Fetcher.new(mgr, fetch)
       end

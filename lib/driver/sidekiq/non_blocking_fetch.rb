@@ -2,6 +2,8 @@ module Driver
   module Sidekiq
     class NonBlockingFetch < ::Sidekiq::BasicFetch
       def initialize(queues)
+        @queues = []
+
         queues.each do |queue, weight|
           [weight.to_i, 1].max.times do
             @queues << "queue:#{queue}"
