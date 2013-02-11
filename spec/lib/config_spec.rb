@@ -11,6 +11,18 @@ module Driver
       end
     end
 
+    describe "#facet" do
+      context "when called with a block" do
+        it "sets the facet" do
+          config = Config.new
+          config.facet do |message|
+            "foo"
+          end
+          config.facet.call({}).should == "foo"
+        end
+      end
+    end
+
     describe "#register_queue" do
       it "requires a name"
       it "accepts a channel"

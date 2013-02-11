@@ -15,7 +15,11 @@ module Driver
     end
 
     def facet(&block)
-      @facet = block
+      if block_given?
+        @facet = block
+      else
+        @facet
+      end
     end
 
     def topic_for(message)
