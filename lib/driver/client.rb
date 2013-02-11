@@ -14,10 +14,6 @@ module Driver
       )
     end
 
-    def register_queue(name, topic)
-      scripts.driver_register_queue(name, topic)
-    end
-
     def pull(queues)
       scripts.driver_pull([queues].flatten)
     end

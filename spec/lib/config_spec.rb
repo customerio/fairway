@@ -24,8 +24,14 @@ module Driver
     end
 
     describe "#register_queue" do
-      it "requires a name"
-      it "accepts a channel"
+      it "adds queue to the set of registered queues" do
+        config = Config.new
+        config.register_queue("myqueue", ".*")
+
+        config.redis.hgetall("registered_queues").should == {
+          "myqueue" => ".*"
+        }
+      end
     end
 
     it "allows setting of redis connection options" do

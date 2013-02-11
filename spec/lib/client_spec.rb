@@ -16,16 +16,6 @@ module Driver
 
     let(:message) { { facet: 1, topic: "event:helloworld" } }
 
-    describe "#register_queue" do
-      it "adds queue to the set of registered queues" do
-        client.register_queue("myqueue", ".*")
-
-        redis.hgetall("registered_queues").should == {
-          "myqueue" => ".*"
-        }
-      end
-    end
-
     describe "#deliver" do
       it "publishes message over the message topic channel" do
         connection = Redis.new
@@ -45,7 +35,7 @@ module Driver
 
       context "registered queue exists for message type" do
         before do
-          client.register_queue("myqueue", "event:helloworld")
+          config.register_queue("myqueue", "event:helloworld")
         end
 
         it "adds message to the environment facet for the queue" do
@@ -74,8 +64,8 @@ module Driver
 
       context "multiple queues exist for message type" do
         before do
-          client.register_queue("myqueue", ".*:helloworld")
-          client.register_queue("yourqueue", "event:.*world")
+          config.register_queue("myqueue", ".*:helloworld")
+          config.register_queue("yourqueue", "event:.*world")
         end
 
         it "adds message for both queues" do
@@ -87,7 +77,7 @@ module Driver
 
       context "registered queue exists for another message type" do
         before do
-          client.register_queue("myqueue", "email:helloworld")
+          config.register_queue("myqueue", "email:helloworld")
         end
 
         it "doesn't add message to the queue" do
@@ -104,7 +94,7 @@ module Driver
 
     describe "#pull" do
       before do
-        client.register_queue("myqueue", "event:helloworld")
+        config.register_queue("myqueue", "event:helloworld")
       end
 
       it "pulls a message off the queue using FIFO strategy" do
@@ -142,8 +132,8 @@ module Driver
 
       context "pulling from multiple queues" do
         before do
-          client.register_queue("myqueue1", "event:1")
-          client.register_queue("myqueue2", "event:2")
+          config.register_queue("myqueue1", "event:1")
+          config.register_queue("myqueue2", "event:2")
         end
 
         it "pulls messages off first queue with a message" do

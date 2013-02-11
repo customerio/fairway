@@ -24,6 +24,10 @@ module Driver
       end
     end
 
+    def register_queue(name, topic)
+      scripts.driver_register_queue(name, topic)
+    end
+
     def topic_for(message)
       @topic.call(message)
     end
