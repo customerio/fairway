@@ -1,11 +1,11 @@
 module Driver
   class Config
-    attr_accessor :redis, :namespace
+    attr_accessor :namespace
 
     DEFAULT_FACET = "default"
 
     def initialize
-      @redis = {}
+      @redis_options = {}
       @namespace = nil
       @facet = lambda { |message| DEFAULT_FACET }
       @topic = lambda { |message| message[:topic] }
@@ -31,5 +31,32 @@ module Driver
     def topic(&block)
       @topic = block
     end
+
+    def redis=(options)
+      @redis_options = options
+    end
+
+    def redis
+      @redis ||= Redis::Namespace.new(@namespace, redis: raw_redis)
+    end
+
+    def scripts
+      @scripts ||= Scripts.new(raw_redis, scripts_namespace)
+    end
+
+  private
+
+    def scripts_namespace
+      if @namespace.blank?
+        ""
+      else
+        "#{@namespace}:"
+      end
+    end
+
+    def raw_redis
+      @raw_redis ||= Redis.new(@redis_options.merge(hiredis: true))
+    end
+
   end
 end

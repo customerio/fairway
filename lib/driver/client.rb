@@ -8,7 +8,6 @@ module Driver
 
     def deliver(message)
       scripts.driver_deliver(
-        namespace,
         @config.topic_for(message),
         @config.facet_for(message),
         message.to_json
@@ -16,33 +15,18 @@ module Driver
     end
 
     def register_queue(name, topic)
-      scripts.driver_register_queue(namespace, name, topic)
+      scripts.driver_register_queue(name, topic)
     end
 
     def pull(queues)
-      scripts.driver_pull(namespace, [queues].flatten)
+      scripts.driver_pull([queues].flatten)
     end
 
-    def redis
-      @redis ||= Redis::Namespace.new(@config.namespace, redis: raw_redis)
-    end
-
-    private
-
-    def namespace
-      if @config.namespace.blank?
-        ""
-      else
-        "#{@config.namespace}:"
-      end
-    end
+  private
 
     def scripts
-      @scripts ||= Scripts.new(raw_redis)
+      @config.scripts
     end
 
-    def raw_redis
-      @raw_redis ||= Redis.new(@config.redis.merge(hiredis: true))
-    end
   end
 end

@@ -29,11 +29,9 @@ module Driver
     end
 
     it "allows setting of redis connection options" do
-      config = Config.new do |config|
+      Config.new do |config|
         config.redis = { host: "127.0.0.1", port: 6379 }
       end
-
-      config.redis.should == { host: "127.0.0.1", port: 6379 }
     end
 
     it "allows setting of redis namespace" do

@@ -4,27 +4,17 @@ module Driver
   describe Client do
     let(:config) do
       Driver.config.tap do |c|
+        c.namespace = "driver:backbone"
+
         c.facet do |message|
           message[:facet]
         end
       end
     end
     let(:client) { Client.new(config) }
-    let(:redis)  { client.redis }
+    let(:redis)  { config.redis }
 
     let(:message) { { facet: 1, topic: "event:helloworld" } }
-
-
-    it "uses the driver's config to build a redis connection" do
-      Driver.configure do |config|
-        config.redis     = { host: "127.0.0.1", port: 6379 }
-        config.namespace = "driver:backbone"
-      end
-
-      redis.redis.client.host.should == "127.0.0.1"
-      redis.redis.client.port.should == 6379
-      redis.namespace.should == "driver:backbone"
-    end
 
     describe "#register_queue" do
       it "adds queue to the set of registered queues" do
@@ -47,7 +37,7 @@ module Driver
 
           on.pmessage do |pattern, channel, received_message|
             received_message.should == message.to_json
-            channel.should == "#{client.redis.namespace}:event:helloworld"
+            channel.should == "#{config.redis.namespace}:event:helloworld"
             connection.punsubscribe(pattern)
           end
         end
