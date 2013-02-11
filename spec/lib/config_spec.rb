@@ -23,17 +23,6 @@ module Driver
       end
     end
 
-    describe "#register_queue" do
-      it "adds queue to the set of registered queues" do
-        config = Config.new
-        config.register_queue("myqueue", ".*")
-
-        config.redis.hgetall("registered_queues").should == {
-          "myqueue" => ".*"
-        }
-      end
-    end
-
     it "allows setting of redis connection options" do
       Config.new do |config|
         config.redis = { host: "127.0.0.1", port: 6379 }

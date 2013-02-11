@@ -1,14 +1,18 @@
 module Driver
   class Config
     attr_accessor :namespace
+    attr_reader :queues
 
     DEFAULT_FACET = "default"
+
+    QueueDefinition = Struct.new(:name, :topic)
 
     def initialize
       @redis_options = {}
       @namespace = nil
       @facet = lambda { |message| DEFAULT_FACET }
       @topic = lambda { |message| message[:topic] }
+      @queues = []
       yield self if block_given?
     end
 
@@ -25,7 +29,7 @@ module Driver
     end
 
     def register_queue(name, topic)
-      scripts.driver_register_queue(name, topic)
+      @queues << QueueDefinition.new(name, topic)
     end
 
     def topic_for(message)

@@ -16,6 +16,23 @@ module Driver
 
     let(:message) { { facet: 1, topic: "event:helloworld" } }
 
+    describe "#initialize" do
+      it "registers queues from the config" do
+        config = Config.new
+        config.register_queue("myqueue", ".*")
+        config.redis.hgetall("registered_queues").should == {}
+        Connection.new(config)
+
+        config.redis.hgetall("registered_queues").should == {
+          "myqueue" => ".*"
+        }
+      end
+
+      context "when an existing queue definition does not match" do
+        it "raises a QueueMismatchError"
+      end
+    end
+
     describe "#deliver" do
       it "publishes message over the message topic channel" do
         redis = Redis.new
