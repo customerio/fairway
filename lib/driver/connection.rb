@@ -13,7 +13,7 @@ module Driver
     def deliver(message)
       scripts.driver_deliver(
         @config.topic_for(message),
-        @config.facet_for(message),
+        @config.facet.call(message),
         message.to_json
       )
     end

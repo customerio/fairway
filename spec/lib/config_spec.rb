@@ -39,7 +39,7 @@ module Driver
 
     it "sets the default facet" do
       config = Config.new
-      config.facet_for(environment_id: 5, facet: 1).should == Config::DEFAULT_FACET
+      config.facet.call(environment_id: 5, facet: 1).should == Config::DEFAULT_FACET
     end
 
     it "allows custom faceting" do
@@ -49,7 +49,7 @@ module Driver
         end
       end
 
-      config.facet_for(environment_id: 5, facet: 1).should == 5
+      config.facet.call(environment_id: 5, facet: 1).should == 5
     end
 
     it "sets the default topic" do

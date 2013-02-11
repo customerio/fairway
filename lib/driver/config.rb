@@ -16,10 +16,6 @@ module Driver
       yield self if block_given?
     end
 
-    def facet_for(message)
-      @facet.call(message)
-    end
-
     def facet(&block)
       if block_given?
         @facet = block
