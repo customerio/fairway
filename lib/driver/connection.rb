@@ -1,7 +1,7 @@
 require "driver/scripts"
 
 module Driver
-  class Client
+  class Connection
     def initialize(config = Driver.config)
       @config = config
     end

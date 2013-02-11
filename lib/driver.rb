@@ -7,7 +7,7 @@ require "redis-namespace"
 
 require "driver/config"
 require "driver/scripts"
-require "driver/client"
+require "driver/connection"
 
 module Driver
   def self.config
