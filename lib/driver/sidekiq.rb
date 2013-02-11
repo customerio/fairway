@@ -1,15 +1,10 @@
-require 'sidekiq/fetch'
+require "driver/sidekiq/composite_fetch"
+require "driver/sidekiq/fetcher"
+require "driver/sidekiq/fetcher_factory"
+require "driver/sidekiq/non_blocking_fetch"
+require "driver/sidekiq/queue_fetch"
 
-module Driver
-  class SidekiqFetch < ::Sidekiq::BasicFetch
-    def initialize(options)
-      Sidekiq.logger.info("DriverSidekiqFetch activated")
-      super
-    end
-
-    def retrieve_work
-      work = Driver::Client.new.pull(*queues_cmd)
-      UnitOfWork.new(*work) if work
-    end
-  end
-end
+# driver_conn = Driver::Connection.new
+# driver_queue_reader = Driver::QueueReader.new(driver_conn, "default")
+# sidekiq_queues = { high: 2, default: 1 }
+# Sidekiq.options[:fetcher] = Driver::FetcherFactory.new(driver_queue_reader, sidekiq_queues)
