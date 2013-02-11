@@ -5,7 +5,7 @@ module Driver
 
     DEFAULT_FACET = "default"
 
-    QueueDefinition = Struct.new(:name, :topic)
+    QueueDefinition = Struct.new(:name, :channel)
 
     def initialize
       @redis_options = {}
@@ -23,8 +23,8 @@ module Driver
       end
     end
 
-    def register_queue(name, topic)
-      @queues << QueueDefinition.new(name, topic)
+    def register_queue(name, channel = Connection::DEFAULT_CHANNEL)
+      @queues << QueueDefinition.new(name, channel)
     end
 
     def redis=(options)

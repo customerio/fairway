@@ -8,7 +8,7 @@ module Driver
       @config = config
 
       @config.queues.each do |queue|
-        scripts.driver_register_queue(queue.name, queue.topic)
+        scripts.driver_register_queue(queue.name, queue.channel)
       end
     end
 
