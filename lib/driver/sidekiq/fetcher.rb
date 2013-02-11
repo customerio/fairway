@@ -6,9 +6,13 @@ module Driver
         @strategy = fetch
       end
 
+      def done!
+        @done = true
+      end
+
       def fetch
         watchdog('Fetcher#fetch died') do
-          return if Sidekiq::Fetcher.done?
+          return if @done
 
           begin
             work = @strategy.retrieve_work
