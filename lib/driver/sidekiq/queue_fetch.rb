@@ -9,10 +9,21 @@ module Driver
       end
 
       def retrieve_work
+        ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work"
+        unit_of_work = nil
+
         if work = @queue_reader.pull
           work = @message_to_job.call(work) if @message_to_job
-          UnitOfWork.new(work["queue"], work)
+          unit_of_work = UnitOfWork.new(work["queue"], work)
         end
+
+        if unit_of_work
+          ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got work"
+        else
+          ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got nil"
+        end
+
+        unit_of_work
       end
     end
   end

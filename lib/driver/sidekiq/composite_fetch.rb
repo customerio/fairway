@@ -18,10 +18,19 @@ module Driver
       end
 
       def retrieve_work
-        fetch_order.detect do |fetch|
+        ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work"
+
+        fetch_order.each do |fetch|
           work = fetch.retrieve_work
-          return work if work
+
+          if work
+            ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got work"
+            return work
+          end
         end
+
+        ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got nil"
+        return nil
       end
     end
   end

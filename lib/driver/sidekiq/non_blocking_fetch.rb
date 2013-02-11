@@ -11,6 +11,18 @@ module Driver
         end
       end
 
+      def retrieve_work
+        ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work"
+
+        if (work = super)
+          ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got work"
+        else
+          ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got nil"
+        end
+
+        work
+      end
+
       def queues_cmd
         queues = @queues.shuffle.uniq
         queues << 0 # return immediately if nothing on queue
