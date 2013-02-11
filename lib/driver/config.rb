@@ -2,10 +2,12 @@ module Driver
   class Config
     attr_accessor :redis, :namespace
 
+    DEFAULT_FACET = "default"
+
     def initialize
       @redis = {}
       @namespace = nil
-      @facet = lambda { |message| message[:facet] }
+      @facet = lambda { |message| DEFAULT_FACET }
       @topic = lambda { |message| message[:topic] }
       yield self if block_given?
     end

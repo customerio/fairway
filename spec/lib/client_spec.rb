@@ -2,7 +2,14 @@ require "spec_helper"
 
 module Driver
   describe Client do
-    let(:client) { Client.new }
+    let(:config) do
+      Driver.config.tap do |c|
+        c.facet do |message|
+          message[:facet]
+        end
+      end
+    end
+    let(:client) { Client.new(config) }
     let(:redis)  { client.redis }
 
     let(:message) { { facet: 1, topic: "event:helloworld" } }
@@ -45,7 +52,7 @@ module Driver
           end
         end
       end
-      
+
       context "registered queue exists for message type" do
         before do
           client.register_queue("myqueue", "event:helloworld")
