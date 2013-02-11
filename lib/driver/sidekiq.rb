@@ -1,3 +1,5 @@
+require "sidekiq"
+require "sidekiq/manager"
 require "driver/sidekiq/composite_fetch"
 require "driver/sidekiq/fetcher"
 require "driver/sidekiq/fetcher_factory"
