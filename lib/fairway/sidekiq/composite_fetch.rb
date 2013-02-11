@@ -1,6 +1,8 @@
 module Fairway
   module Sidekiq
     class CompositeFetch
+      attr_reader :fetches
+
       def initialize(fetches)
         @fetches = []
 
@@ -11,10 +13,24 @@ module Fairway
         end
       end
 
+      def fetch_order
+        fetches.shuffle.uniq
+      end
+
       def retrieve_work
-        @queues.shuffle.uniq.detect do |fetch|
-          fetch.retrieve_work
+        ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work"
+
+        fetch_order.each do |fetch|
+          work = fetch.retrieve_work
+
+          if work
+            ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got work"
+            return work
+          end
         end
+
+        ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got nil"
+        return nil
       end
     end
   end

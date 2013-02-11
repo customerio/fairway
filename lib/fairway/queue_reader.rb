@@ -8,6 +8,5 @@ module Fairway
     def pull
       @connection.scripts.fairway_pull(@queue_names)
     end
-
   end
 end
