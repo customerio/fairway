@@ -9,10 +9,10 @@ module Driver
       end
 
       def retrieve_work
-        if (work = @queue_reader.pull)
-          work = @message_to_job.call(work) if @message_to_job
-          UnitOfWork.new(work["queue"], work)
-        end
+        if work = @queue_reader.pull
+          work = @message_to_job.call(work) if @message_to_job
+          UnitOfWork.new(work["queue"], work)
+        end
       end
     end
   end

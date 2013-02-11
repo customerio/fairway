@@ -1,6 +1,8 @@
 module Driver
   module Sidekiq
     class CompositeFetch
+      attr_reader :fetches
+
       def initialize(fetches)
         @fetches = []
 
@@ -11,9 +13,14 @@ module Driver
         end
       end
 
+      def fetch_order
+        fetches.shuffle.uniq
+      end
+
       def retrieve_work
-        @queues.shuffle.uniq.detect do |fetch|
-          fetch.retrieve_work
+        fetch_order.detect do |fetch|
+          work = fetch.retrieve_work
+          return work if work
         end
       end
     end
