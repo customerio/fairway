@@ -11,7 +11,7 @@ module Driver
     end
 
     describe "#method_missing" do
-      let(:scripts) { Scripts.new(Redis.new) }
+      let(:scripts) { Scripts.new(Redis.new, "foo") }
 
       it "runs the script" do
         scripts.driver_register_queue("namespace", "name", "topic")

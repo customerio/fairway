@@ -7,7 +7,9 @@ require "redis-namespace"
 
 require "driver/config"
 require "driver/scripts"
-require "driver/client"
+require "driver/channeled_connection"
+require "driver/connection"
+require "driver/queue_reader"
 
 module Driver
   def self.config

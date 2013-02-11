@@ -17,7 +17,7 @@ end
 Dir[File.join(File.dirname(__FILE__), "support/**/*.rb")].each {|f| require f}
 
 def clear_test_data
-  redis = Driver::Client.new.redis
+  redis = Driver::Config.new.redis
   redis.del(*redis.keys) if redis.keys.any?
 end
 

@@ -7,13 +7,14 @@ module Driver
       @script_shas ||= {}
     end
 
-    def initialize(redis)
+    def initialize(redis, namespace)
       @redis = redis
+      @namespace = namespace
     end
 
-    def method_missing(method_name, namespace, *args)
+    def method_missing(method_name, *args)
       loaded = false
-      @redis.evalsha(script_sha(method_name), [namespace], args)
+      @redis.evalsha(script_sha(method_name), [@namespace], args)
     rescue Redis::CommandError => ex
       if ex.message.include?("NOSCRIPT") && !loaded
         @redis.script(:load, script_source(method_name))
