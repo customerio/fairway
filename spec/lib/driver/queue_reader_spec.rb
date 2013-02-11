@@ -7,7 +7,12 @@ module Driver
         c.facet { |message| message[:facet] }
       end
     end
-    let(:connection)  { Connection.new(config) }
+    let(:connection) do
+      c = Connection.new(config)
+      ChanneledConnection.new(c) do |message|
+        message[:topic]
+      end
+    end
     let(:message)     { { facet: 1, topic: "event:helloworld" } }
 
     describe "#initialize" do

@@ -51,20 +51,5 @@ module Driver
 
       config.facet.call(environment_id: 5, facet: 1).should == 5
     end
-
-    it "sets the default topic" do
-      config = Config.new
-      config.topic_for(id: 5, topic: "message").should == "message"
-    end
-
-    it "allows custom topics" do
-      config = Config.new do |config|
-        config.topic do |message|
-          message[:class]
-        end
-      end
-
-      config.topic_for(class: "SomeClass", topic: "message").should == "SomeClass"
-    end
   end
 end

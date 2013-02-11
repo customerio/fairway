@@ -2,6 +2,8 @@ require "driver/scripts"
 
 module Driver
   class Connection
+    DEFAULT_CHANNEL = "default"
+
     def initialize(config = Driver.config)
       @config = config
 
@@ -10,9 +12,9 @@ module Driver
       end
     end
 
-    def deliver(message)
+    def deliver(message, channel = DEFAULT_CHANNEL)
       scripts.driver_deliver(
-        @config.topic_for(message),
+        channel,
         @config.facet.call(message),
         message.to_json
       )

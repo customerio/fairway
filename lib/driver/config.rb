@@ -11,7 +11,6 @@ module Driver
       @redis_options = {}
       @namespace = nil
       @facet = lambda { |message| DEFAULT_FACET }
-      @topic = lambda { |message| message[:topic] }
       @queues = []
       yield self if block_given?
     end
@@ -26,14 +25,6 @@ module Driver
 
     def register_queue(name, topic)
       @queues << QueueDefinition.new(name, topic)
-    end
-
-    def topic_for(message)
-      @topic.call(message)
-    end
-
-    def topic(&block)
-      @topic = block
     end
 
     def redis=(options)

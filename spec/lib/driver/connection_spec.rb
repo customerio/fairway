@@ -11,7 +11,12 @@ module Driver
         end
       end
     end
-    let(:connection) { Connection.new(config) }
+    let(:connection) do
+      c = Connection.new(config)
+      ChanneledConnection.new(c) do |message|
+        message[:topic]
+      end
+    end
     let(:redis)  { config.redis }
 
     let(:message) { { facet: 1, topic: "event:helloworld" } }
