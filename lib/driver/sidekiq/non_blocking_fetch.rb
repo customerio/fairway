@@ -42,8 +42,7 @@ module Driver
       end
 
       def queues_cmd
-        queues = @queues.shuffle.uniq
-        queues << 0 # return immediately if nothing on queue
+        @queues.shuffle.uniq
       end
 
       def namespace

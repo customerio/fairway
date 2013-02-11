@@ -20,8 +20,7 @@ module Driver
             if work
               @mgr.async.assign(work)
             else
-              sleep(TIMEOUT) # Sleep before returning to work
-              after(0) { fetch }
+              after(TIMEOUT) { fetch }
             end
           rescue => ex
             logger.error("Error fetching message: #{ex}")
