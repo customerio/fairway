@@ -7,6 +7,7 @@ module Driver
       @namespace = nil
       @facet = lambda { |message| message[:facet] }
       @topic = lambda { |message| message[:topic] }
+      yield self if block_given?
     end
 
     def facet_for(message)
