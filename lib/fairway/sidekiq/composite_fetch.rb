@@ -1,4 +1,4 @@
-module Driver
+module Fairway
   module Sidekiq
     class CompositeFetch
       def initialize(fetches)

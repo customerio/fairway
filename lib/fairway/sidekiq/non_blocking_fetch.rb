@@ -1,4 +1,4 @@
-module Driver
+module Fairway
   module Sidekiq
     class NonBlockingFetch < ::Sidekiq::BasicFetch
       def initialize(queues)

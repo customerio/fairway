@@ -1,6 +1,6 @@
 source :rubygems
 
-# Specify your gem's dependencies in driver.gemspec
+# Specify your gem's dependencies in fairway.gemspec
 gemspec
 
 group :test do

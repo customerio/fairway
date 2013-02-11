@@ -1,4 +1,4 @@
-module Driver
+module Fairway
   class Config
     attr_accessor :namespace
     attr_reader :queues

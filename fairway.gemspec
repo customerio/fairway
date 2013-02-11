@@ -1,11 +1,11 @@
 # -*- encoding: utf-8 -*-
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'driver/version'
+require 'fairway/version'
 
 Gem::Specification.new do |gem|
-  gem.name          = "driver"
-  gem.version       = Driver::VERSION
+  gem.name          = "fairway"
+  gem.version       = Fairway::VERSION
   gem.authors       = ["John Allison"]
   gem.email         = ["john@customer.io"]
   gem.description   = %q{TODO: Write a gem description}

@@ -1,6 +1,6 @@
 require "spec_helper"
 
-module Driver
+module Fairway
   describe Config do
     describe "#initialize" do
       it "yields itself to a block" do
@@ -31,10 +31,10 @@ module Driver
 
     it "allows setting of redis namespace" do
       config = Config.new do |config|
-        config.namespace = "driver:backbone"
+        config.namespace = "ns"
       end
 
-      config.namespace.should == "driver:backbone"
+      config.namespace.should == "ns"
     end
 
     it "sets the default facet" do

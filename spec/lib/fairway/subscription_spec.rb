@@ -1,7 +1,7 @@
 require "spec_helper"
 
-# module Driver
-#   describe "Subscription" do
+# module Fairway
+#   describe Subscription do
 #     describe "#initialize" do
 #       it "requires a Connection"
 #       it "requires a pattern"

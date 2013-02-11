@@ -1,17 +1,17 @@
-require "driver/version"
+require "fairway/version"
 
 require "active_support/core_ext"
 require "redis"
 require "hiredis"
 require "redis-namespace"
 
-require "driver/config"
-require "driver/scripts"
-require "driver/channeled_connection"
-require "driver/connection"
-require "driver/queue_reader"
+require "fairway/config"
+require "fairway/scripts"
+require "fairway/channeled_connection"
+require "fairway/connection"
+require "fairway/queue_reader"
 
-module Driver
+module Fairway
   def self.config
     @config ||= Config.new
   end

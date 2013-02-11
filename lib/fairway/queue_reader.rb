@@ -1,4 +1,4 @@
-module Driver
+module Fairway
   class QueueReader
     def initialize(connection, *queue_names)
       @connection = connection
@@ -6,7 +6,7 @@ module Driver
     end
 
     def pull
-      @connection.scripts.driver_pull(@queue_names)
+      @connection.scripts.fairway_pull(@queue_names)
     end
 
   end

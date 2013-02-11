@@ -1,4 +1,4 @@
-module Driver
+module Fairway
   class ChanneledConnection
     def initialize(connection, &block)
       @connection = connection

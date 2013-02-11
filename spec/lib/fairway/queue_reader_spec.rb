@@ -1,7 +1,7 @@
 require "spec_helper"
 
-module Driver
-  describe "QueueReader" do
+module Fairway
+  describe QueueReader do
     let(:config) do
       Config.new do |c|
         c.facet { |message| message[:facet] }

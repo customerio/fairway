@@ -16,21 +16,16 @@ end
 # in spec/support/ and its subdirectories.
 Dir[File.join(File.dirname(__FILE__), "support/**/*.rb")].each {|f| require f}
 
-def clear_test_data
-  redis = Driver::Config.new.redis
-  redis.del(*redis.keys) if redis.keys.any?
-end
-
 RSpec.configure do |config|
   config.before(:each) do
-    Driver.configure do |config|
+    Fairway.configure do |config|
       config.namespace = "test:backbone"
     end
 
-    clear_test_data
+    Fairway::Config.new.redis.flushdb
   end
 
   config.after(:each) do
-    clear_test_data
+    Fairway::Config.new.redis.flushdb
   end
 end

@@ -1,6 +1,6 @@
 require "sidekiq/fetch"
 
-module Driver
+module Fairway
   module Sidekiq
     class QueueFetch < ::Sidekiq::BasicFetch
       def initialize(queue_reader, &block)

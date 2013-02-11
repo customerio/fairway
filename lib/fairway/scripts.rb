@@ -1,7 +1,7 @@
 require "pathname"
 require "digest/sha1"
 
-module Driver
+module Fairway
   class Scripts
     def self.script_shas
       @script_shas ||= {}

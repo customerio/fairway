@@ -1,8 +1,8 @@
-module Driver
+module Fairway
   module Sidekiq
     class Fetcher < ::Sidekiq::Fetcher
       def initialize(mgr, fetch)
-        Sidekiq.logger.info("Driver::Sidekiq::Fetcher activated")
+        Sidekiq.logger.info("Fairway::Sidekiq::Fetcher activated")
         @mgr = mgr
         @strategy = fetch
       end
