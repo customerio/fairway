@@ -18,12 +18,6 @@ module Driver
       )
     end
 
-    def pull(queues)
-      scripts.driver_pull([queues].flatten)
-    end
-
-  private
-
     def scripts
       @config.scripts
     end
