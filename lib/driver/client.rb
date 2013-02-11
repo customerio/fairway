@@ -2,11 +2,15 @@ require "driver/scripts"
 
 module Driver
   class Client
+    def initialize(config = Driver.config)
+      @config = config
+    end
+
     def deliver(message)
       scripts.driver_deliver(
         namespace,
-        Driver.config.topic_for(message),
-        Driver.config.facet_for(message),
+        @config.topic_for(message),
+        @config.facet_for(message),
         message.to_json
       )
     end
@@ -20,16 +24,16 @@ module Driver
     end
 
     def redis
-      @redis ||= Redis::Namespace.new(Driver.config.namespace, redis: raw_redis)
+      @redis ||= Redis::Namespace.new(@config.namespace, redis: raw_redis)
     end
 
     private
 
     def namespace
-      if Driver.config.namespace.blank?
+      if @config.namespace.blank?
         ""
       else
-        "#{Driver.config.namespace}:"
+        "#{@config.namespace}:"
       end
     end
 
@@ -38,7 +42,7 @@ module Driver
     end
 
     def raw_redis
-      @raw_redis ||= Redis.new(Driver.config.redis.merge(hiredis: true))
+      @raw_redis ||= Redis.new(@config.redis.merge(hiredis: true))
     end
   end
 end
