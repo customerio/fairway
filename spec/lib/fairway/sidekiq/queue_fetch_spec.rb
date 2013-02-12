@@ -9,7 +9,7 @@ module Fairway
       it "requests work from the queue reader" do
         fetch = QueueFetch.new(reader)
 
-        reader.stub(pull: work)
+        reader.stub(pull: ["fairway", work])
 
         unit_of_work = fetch.retrieve_work
         unit_of_work.queue_name.should == "golf_events"
@@ -17,14 +17,14 @@ module Fairway
       end
 
       it "allows transforming of the message into a job" do
-        fetch = QueueFetch.new(reader) do |message|
+        fetch = QueueFetch.new(reader) do |fairway_queue, message|
           message.tap do |message|
             message["queue"] = "my_#{message["queue"]}"
             message["class"] = "GolfEventJob"
           end
         end
 
-        reader.stub(pull: work)
+        reader.stub(pull: ["fairway", work])
 
         unit_of_work = fetch.retrieve_work
         unit_of_work.queue_name.should == "my_golf_events"

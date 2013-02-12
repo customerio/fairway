@@ -12,9 +12,11 @@ module Fairway
         ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work"
         unit_of_work = nil
 
-        if work = @queue_reader.pull
+        fairway_queue, work = @queue_reader.pull
+
+        if work
           decoded_work = JSON.parse(work)
-          work = @message_to_job.call(decoded_work).to_json if @message_to_job
+          work = @message_to_job.call(fairway_queue, decoded_work).to_json if @message_to_job
           unit_of_work = UnitOfWork.new(decoded_work["queue"], work)
         end
 
