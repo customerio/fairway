@@ -7,13 +7,19 @@ module Fairway
         c.facet { |message| message[:facet] }
       end
     end
+    let(:base_connection) { Connection.new(config) }
     let(:connection) do
-      ChanneledConnection.new(Connection.new(config)) do |message|
+      ChanneledConnection.new(base_connection) do |message|
         message[:topic]
       end
     end
     let(:redis)  { config.redis }
     let(:message) { { facet: 1, topic: "event:helloworld" } }
+
+    it "delegates non existant methods to parent connection" do
+      base_connection.should_receive(:random_method)
+      connection.random_method
+    end
 
     describe "#deliver" do
       context "multiple queues exist for message type" do

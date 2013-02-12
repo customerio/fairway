@@ -20,9 +20,20 @@ module Fairway
       )
     end
 
+    def subscribe(channel_pattern, &block)
+      redis.psubscribe(channel_pattern) do |on|
+        on.pmessage do |pattern, channel, message|
+          block.call(channel, message)
+        end
+      end
+    end
+
     def scripts
       @config.scripts
     end
 
+    def redis
+      @config.redis
+    end
   end
 end
