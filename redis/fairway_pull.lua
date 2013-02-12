@@ -16,6 +16,6 @@ for index, queue_name in ipairs(ARGV) do
       redis.call('lpush', facet_queue, facet);
     end
 
-    return message;
+    return {queue_name, message};
   end
 end

@@ -31,8 +31,8 @@ module Fairway
         connection.deliver(message2 = message.merge(message: 2))
 
         reader = QueueReader.new(connection, "myqueue")
-        reader.pull.should == message1.to_json
-        reader.pull.should == message2.to_json
+        reader.pull.should == ["myqueue", message1.to_json]
+        reader.pull.should == ["myqueue", message2.to_json]
       end
 
       it "pulls from facets of the queue in a round-robin nature" do
@@ -41,9 +41,9 @@ module Fairway
         connection.deliver(message3 = message.merge(facet: 2, message: 3))
 
         reader = QueueReader.new(connection, "myqueue")
-        reader.pull.should == message1.to_json
-        reader.pull.should == message3.to_json
-        reader.pull.should == message2.to_json
+        reader.pull.should == ["myqueue", message1.to_json]
+        reader.pull.should == ["myqueue", message3.to_json]
+        reader.pull.should == ["myqueue", message2.to_json]
       end
 
       it "removes facet from active list if it becomes empty" do
@@ -59,7 +59,7 @@ module Fairway
         connection.deliver(message)
 
         reader = QueueReader.new(connection, "myqueue")
-        reader.pull.should == message.to_json
+        reader.pull.should == ["myqueue", message.to_json]
         reader.pull.should be_nil
       end
 
@@ -74,8 +74,8 @@ module Fairway
           connection.deliver(message2 = message.merge(topic: "event:2"))
 
           reader = QueueReader.new(connection, "myqueue2", "myqueue1")
-          reader.pull.should == message2.to_json
-          reader.pull.should == message1.to_json
+          reader.pull.should == ["myqueue2", message2.to_json]
+          reader.pull.should == ["myqueue1", message1.to_json]
         end
 
         it "returns nil if no queues have messages" do
@@ -90,10 +90,10 @@ module Fairway
           connection.deliver(message4 = message.merge(facet: 1, topic: "event:2"))
 
           reader = QueueReader.new(connection, "myqueue2", "myqueue1")
-          reader.pull.should == message4.to_json
-          reader.pull.should == message1.to_json
-          reader.pull.should == message3.to_json
-          reader.pull.should == message2.to_json
+          reader.pull.should == ["myqueue2", message4.to_json]
+          reader.pull.should == ["myqueue1", message1.to_json]
+          reader.pull.should == ["myqueue1", message3.to_json]
+          reader.pull.should == ["myqueue1", message2.to_json]
         end
       end
     end
