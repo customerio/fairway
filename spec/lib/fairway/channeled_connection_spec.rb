@@ -17,8 +17,14 @@ module Fairway
     let(:message) { { facet: 1, topic: "event:helloworld" } }
 
     it "delegates non existant methods to parent connection" do
-      base_connection.should_receive(:random_method)
-      connection.random_method
+      base_connection.should_receive(:random_method) do |arg1, arg2, &block|
+        block.call(arg1, arg2)
+      end
+
+      connection.random_method(1, 2) do |arg1, arg2|
+        arg1.should == 1
+        arg2.should == 2
+      end
     end
 
     describe "#deliver" do

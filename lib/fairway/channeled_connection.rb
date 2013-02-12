@@ -10,8 +10,8 @@ module Fairway
       @connection.deliver(message, channel)
     end
 
-    def method_missing(method, *args)
-      @connection.respond_to?(method) ? @connection.send(method, *args) : super
+    def method_missing(method, *args, &block)
+      @connection.respond_to?(method) ? @connection.send(method, *args, &block) : super
     end
   end
 end
