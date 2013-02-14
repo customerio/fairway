@@ -5,6 +5,10 @@ module Fairway
       @queue_names = [queue_names].flatten!
     end
 
+    def length
+      @connection.redis.mget(@queue_names.map{|q| "#{q}:length" }).sum.to_i
+    end
+
     def pull
       @connection.scripts.fairway_pull(@queue_names)
     end

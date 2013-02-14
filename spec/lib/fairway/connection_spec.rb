@@ -2,24 +2,18 @@ require "spec_helper"
 
 module Fairway
   describe Connection do
-    let(:config) do
-      Config.new do |c|
-        c.facet { |message| message[:facet] }
-      end
-    end
-
-    let(:connection) { Connection.new(config) }
-    let(:redis)      { config.redis }
+    let(:connection) { Connection.new(Fairway.config) }
+    let(:redis)      { Fairway.config.redis }
     let(:message)    { { facet: 1, topic: "event:helloworld" } }
 
     describe "#initialize" do
       it "registers queues from the config" do
-        config = Config.new
-        config.register_queue("myqueue", ".*")
-        config.redis.hgetall("registered_queues").should == {}
-        Connection.new(config)
+        Fairway.config.register_queue("myqueue", ".*")
+        Fairway.config.redis.hgetall("registered_queues").should == {}
 
-        config.redis.hgetall("registered_queues").should == {
+        Connection.new(Fairway.config)
+
+        Fairway.config.redis.hgetall("registered_queues").should == {
           "myqueue" => ".*"
         }
       end
@@ -40,7 +34,7 @@ module Fairway
 
           on.pmessage do |pattern, channel, received_message|
             received_message.should == message.to_json
-            channel.should == "default"
+            channel.should == "test:fairway:default"
             redis.punsubscribe(pattern)
           end
         end
@@ -48,7 +42,7 @@ module Fairway
 
       context "registered queue exists for message type" do
         before do
-          config.register_queue("myqueue")
+          Fairway.config.register_queue("myqueue")
         end
 
         it "adds message to the environment facet for the queue" do

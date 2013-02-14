@@ -15,6 +15,7 @@ for i = 1, #registered_queues, 2 do
     local facet_queue   = namespace .. queue_name .. ':facet_queue';
 
     redis.call('lpush', namespace .. queue_name .. ':' .. facet, message)
+    redis.call('incr', namespace .. queue_name .. ':length');
 
     if redis.call('sadd', active_facets, facet) == 1 then
       redis.call('lpush', facet_queue, facet);

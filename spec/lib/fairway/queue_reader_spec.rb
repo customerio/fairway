@@ -2,13 +2,8 @@ require "spec_helper"
 
 module Fairway
   describe QueueReader do
-    let(:config) do
-      Config.new do |c|
-        c.facet { |message| message[:facet] }
-      end
-    end
     let(:connection) do
-      c = Connection.new(config)
+      c = Connection.new(Fairway.config)
       ChanneledConnection.new(c) do |message|
         message[:topic]
       end
@@ -21,9 +16,33 @@ module Fairway
       end
     end
 
+    describe "#length" do
+      let(:reader) { QueueReader.new(connection, "myqueue") }
+
+      before do
+        Fairway.config.register_queue("myqueue", "event:helloworld")
+      end
+
+      it "returns the number of queued messages across facets" do
+        reader.length.should == 0
+
+        connection.deliver(message.merge(facet: 1, message: 1))
+        connection.deliver(message.merge(facet: 1, message: 2))
+        connection.deliver(message.merge(facet: 2, message: 3))
+
+        reader.length.should == 3
+
+        reader.pull
+        reader.pull
+        reader.pull
+
+        reader.length.should == 0
+      end
+    end
+
     describe "#pull" do
       before do
-        config.register_queue("myqueue", "event:helloworld")
+        Fairway.config.register_queue("myqueue", "event:helloworld")
       end
 
       it "pulls a message off the queue using FIFO strategy" do
@@ -49,10 +68,10 @@ module Fairway
       it "removes facet from active list if it becomes empty" do
         connection.deliver(message)
 
-        config.redis.smembers("myqueue:active_facets").should == ["1"]
+        Fairway.config.redis.smembers("myqueue:active_facets").should == ["1"]
         reader = QueueReader.new(connection, "myqueue")
         reader.pull
-        config.redis.smembers("myqueue:active_facets").should be_empty
+        Fairway.config.redis.smembers("myqueue:active_facets").should be_empty
       end
 
       it "returns nil if there are no messages to retrieve" do
@@ -65,8 +84,8 @@ module Fairway
 
       context "pulling from multiple queues" do
         before do
-          config.register_queue("myqueue1", "event:1")
-          config.register_queue("myqueue2", "event:2")
+          Fairway.config.register_queue("myqueue1", "event:1")
+          Fairway.config.register_queue("myqueue2", "event:2")
         end
 
         it "pulls messages off first queue with a message" do

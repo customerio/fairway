@@ -10,6 +10,10 @@ for index, queue_name in ipairs(ARGV) do
     local message_queue = namespace .. queue_name .. ':' .. facet;
     local message = redis.call('rpop', message_queue);
 
+    if message then
+      redis.call('decr', namespace .. queue_name .. ':length');
+    end
+
     if redis.call('llen', message_queue) == 0 then
       redis.call('srem', active_facets, facet);
     else
