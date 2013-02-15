@@ -16,7 +16,12 @@ module Fairway
 
         if work
           decoded_work = JSON.parse(work)
-          work = @message_to_job.call(fairway_queue, decoded_work).to_json if @message_to_job
+
+          if @message_to_job
+            decoded_work = @message_to_job.call(fairway_queue, decoded_work)
+            work         = decoded_work.to_json
+          end
+
           unit_of_work = UnitOfWork.new(decoded_work["queue"], work)
         end
 
