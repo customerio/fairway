@@ -1,4 +1,5 @@
 require "sidekiq"
+require "sidekiq/fetch"
 
 require "fairway/sidekiq/composite_fetch"
 require "fairway/sidekiq/basic_fetch"

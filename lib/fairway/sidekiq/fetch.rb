@@ -1,5 +1,3 @@
-require "sidekiq/fetch"
-
 module Fairway
   module Sidekiq
     class Fetch < ::Sidekiq::BasicFetch
