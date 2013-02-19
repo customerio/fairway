@@ -23,6 +23,16 @@ module Fairway
       end
     end
 
+    describe "#queues" do
+      it "returns a QueueReader for every currently registered queue" do
+        Fairway.config.redis.hset("registered_queues", "name", "channel")
+
+        connection.queues.should == [
+          QueueReader.new(connection, "name")
+        ]
+      end
+    end
+
     describe "#deliver" do
       it "publishes message over the message topic channel" do
         redis = Redis.new

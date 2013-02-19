@@ -116,5 +116,20 @@ module Fairway
         end
       end
     end
+
+    describe "equality" do
+      it "should equal queue readers with same connection and queue names" do
+        QueueReader.new(connection, "a", "b", "c").should == QueueReader.new(connection, "a", "b", "c")
+      end
+
+      it "doesn't equal queue readers with different connection" do
+        new_conn = Connection.new(Fairway.config)
+        QueueReader.new(connection, "a", "b", "c").should_not == QueueReader.new(new_conn, "a", "b", "c")
+      end
+
+      it "doesn't equal queue readers with different queues" do
+        QueueReader.new(connection, "a", "b", "c").should_not == QueueReader.new(connection, "a", "b")
+      end
+    end
   end
 end

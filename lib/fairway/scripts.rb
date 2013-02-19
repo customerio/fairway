@@ -12,9 +12,17 @@ module Fairway
       @namespace = namespace
     end
 
+    def register_queue(name, channel)
+      @redis.hset(registered_queues_key, name, channel)
+    end
+
+    def registered_queues
+      @redis.hgetall(registered_queues_key)
+    end
+
     def method_missing(method_name, *args)
       loaded = false
-      @redis.evalsha(script_sha(method_name), [@namespace], args)
+      @redis.evalsha(script_sha(method_name), [namespace], args)
     rescue Redis::CommandError => ex
       if ex.message.include?("NOSCRIPT") && !loaded
         @redis.script(:load, script_source(method_name))
@@ -27,6 +35,14 @@ module Fairway
 
   private
 
+    def registered_queues_key
+      "#{namespace}registered_queues"
+    end
+
+    def namespace
+      @namespace.blank? ? "" : "#{@namespace}:"
+    end
+
     def script_sha(name)
       self.class.script_shas[name] ||= Digest::SHA1.hexdigest(script_source(name))
     end
@@ -38,6 +54,5 @@ module Fairway
     def script_path(name)
       Pathname.new(__FILE__).dirname.join("../../redis/#{name}.lua")
     end
-
   end
 end

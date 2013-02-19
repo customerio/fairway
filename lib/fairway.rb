@@ -17,6 +17,11 @@ module Fairway
   end
 
   def self.configure
-    yield(config) if block_given?
+    yield(config)
+  end
+
+  def self.reconfigure
+    @config = Config.new
+    yield(config)
   end
 end

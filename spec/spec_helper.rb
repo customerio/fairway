@@ -22,7 +22,7 @@ Dir[File.join(File.dirname(__FILE__), "support/**/*.rb")].each {|f| require f}
 
 RSpec.configure do |config|
   config.before(:each) do
-    Fairway.configure do |config|
+    Fairway.reconfigure do |config|
       config.namespace = "test:fairway"
       config.facet { |message| message[:facet] }
     end
