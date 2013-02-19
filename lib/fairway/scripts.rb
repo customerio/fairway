@@ -14,10 +14,10 @@ module Fairway
 
     def method_missing(method_name, *args)
       loaded = false
-      @redis.evalsha(script_sha(method_name), [@namespace], args)
+      @redis.with { |conn| conn.evalsha(script_sha(method_name), [@namespace], args) }
     rescue Redis::CommandError => ex
       if ex.message.include?("NOSCRIPT") && !loaded
-        @redis.script(:load, script_source(method_name))
+        @redis.with { |conn| conn.script(:load, script_source(method_name)) }
         loaded = true
         retry
       else

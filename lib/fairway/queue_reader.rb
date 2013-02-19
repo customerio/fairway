@@ -6,7 +6,7 @@ module Fairway
     end
 
     def length
-      @connection.redis.mget(@queue_names.map{|q| "#{q}:length" }).sum.to_i
+      @connection.redis { |conn| conn.mget(@queue_names.map{|q| "#{q}:length" }).sum.to_i }
     end
 
     def pull

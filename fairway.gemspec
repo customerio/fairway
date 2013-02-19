@@ -20,5 +20,6 @@ Gem::Specification.new do |gem|
   gem.add_dependency("activesupport")
   gem.add_dependency("redis")
   gem.add_dependency("hiredis")
+  gem.add_dependency("connection_pool")
   gem.add_dependency("redis-namespace")
 end

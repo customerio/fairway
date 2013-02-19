@@ -3,6 +3,7 @@ require "fairway/version"
 require "active_support/core_ext"
 require "redis"
 require "hiredis"
+require "connection_pool"
 require "redis-namespace"
 
 require "fairway/config"
