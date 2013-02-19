@@ -1,5 +1,5 @@
 module Fairway
-  class QueueReader
+  class Queue
     attr_reader :connection, :queue_names
 
     def initialize(connection, *queue_names)

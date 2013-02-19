@@ -5,10 +5,10 @@ require "fairway/sidekiq/composite_fetch"
 require "fairway/sidekiq/basic_fetch"
 require "fairway/sidekiq/fetch"
 
-# conn         = Fairway::Connection.new
-# queue_reader = Fairway::QueueReader.new(conn, "fairway")
+# conn  = Fairway::Connection.new
+# queue = Fairway::Queue.new(conn, "fairway")
 #
-# queue_fetch  = Fairway::Sidekiq::Fetch.new(queue_reader) do |message|
+# queue_fetch  = Fairway::Sidekiq::Fetch.new(queue) do |message|
 #   # Transform message into a sidekiq job
 #   message
 # end

@@ -15,7 +15,7 @@ module Fairway
     def queues
       @queues ||= begin
         scripts.registered_queues.map do |name, _|
-          QueueReader.new(self, name)
+          Queue.new(self, name)
         end
       end
     end

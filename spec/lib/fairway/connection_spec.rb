@@ -24,11 +24,11 @@ module Fairway
     end
 
     describe "#queues" do
-      it "returns a QueueReader for every currently registered queue" do
+      it "returns a Queue for every currently registered queue" do
         Fairway.config.redis.hset("registered_queues", "name", "channel")
 
         connection.queues.should == [
-          QueueReader.new(connection, "name")
+          Queue.new(connection, "name")
         ]
       end
     end

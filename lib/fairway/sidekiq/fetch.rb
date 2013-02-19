@@ -1,8 +1,8 @@
 module Fairway
   module Sidekiq
     class Fetch < ::Sidekiq::BasicFetch
-      def initialize(queue_reader, &block)
-        @queue_reader = queue_reader
+      def initialize(queue, &block)
+        @queue = queue
         @message_to_job = block if block_given?
       end
 
@@ -12,7 +12,7 @@ module Fairway
         ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work"
         unit_of_work = nil
 
-        fairway_queue, work = @queue_reader.pull
+        fairway_queue, work = @queue.pull
 
         if work
           decoded_work = JSON.parse(work)

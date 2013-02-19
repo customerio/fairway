@@ -3,12 +3,12 @@ require "spec_helper"
 module Fairway
   module Sidekiq
     describe Fetch do
-      let(:reader) { QueueReader.new(Connection.new, "fairway") }
+      let(:queue) { Queue.new(Connection.new, "fairway") }
       let(:work)   { { queue: "golf_events", type: "swing", name: "putt" }.to_json }
-      let(:fetch)  { Fetch.new(reader) }
+      let(:fetch)  { Fetch.new(queue) }
 
-      it "requests work from the queue reader" do
-        reader.stub(pull: ["fairway", work])
+      it "requests work from the queue queue" do
+        queue.stub(pull: ["fairway", work])
 
         unit_of_work = fetch.retrieve_work
         unit_of_work.queue_name.should == "golf_events"
@@ -16,14 +16,14 @@ module Fairway
       end
 
       it "allows transforming of the message into a job" do
-        fetch = Fetch.new(reader) do |fairway_queue, message|
+        fetch = Fetch.new(queue) do |fairway_queue, message|
           {
             "queue" => "my_#{message["queue"]}",
             "class" => "GolfEventJob"
           }
         end
 
-        reader.stub(pull: ["fairway", work])
+        queue.stub(pull: ["fairway", work])
 
         unit_of_work = fetch.retrieve_work
         unit_of_work.queue_name.should == "my_golf_events"
@@ -32,13 +32,13 @@ module Fairway
 
       it "sleeps if no work is found" do
         fetch.should_receive(:sleep).with(1)
-        reader.stub(pull: nil)
+        queue.stub(pull: nil)
         fetch.retrieve_work
       end
 
       it "doesn't sleep if blocking option is false" do
         fetch.should_not_receive(:sleep)
-        reader.stub(pull: nil)
+        queue.stub(pull: nil)
         fetch.retrieve_work(blocking: false)
       end
     end

@@ -9,7 +9,7 @@ require "fairway/config"
 require "fairway/scripts"
 require "fairway/channeled_connection"
 require "fairway/connection"
-require "fairway/queue_reader"
+require "fairway/queue"
 
 module Fairway
   def self.config
