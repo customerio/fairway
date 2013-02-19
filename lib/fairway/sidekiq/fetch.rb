@@ -2,13 +2,15 @@ require "sidekiq/fetch"
 
 module Fairway
   module Sidekiq
-    class QueueFetch < ::Sidekiq::BasicFetch
+    class Fetch < ::Sidekiq::BasicFetch
       def initialize(queue_reader, &block)
         @queue_reader = queue_reader
         @message_to_job = block if block_given?
       end
 
-      def retrieve_work
+      def retrieve_work(options = {})
+        options = { blocking: true }.merge(options)
+
         ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work"
         unit_of_work = nil
 
@@ -29,6 +31,7 @@ module Fairway
           ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got work"
         else
           ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got nil"
+          sleep 1 if options[:blocking]
         end
 
         unit_of_work

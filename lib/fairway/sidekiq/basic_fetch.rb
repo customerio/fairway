@@ -1,13 +1,15 @@
 module Fairway
   module Sidekiq
-    class NonBlockingFetch < ::Sidekiq::BasicFetch
+    class BasicFetch < ::Sidekiq::BasicFetch
       attr_reader :queues
 
       def initialize(options)
         @queues = options[:queues].map { |q| "queue:#{q}" }
       end
 
-      def retrieve_work
+      def retrieve_work(options = {})
+        options = { blocking: true }.merge(options)
+
         ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work #{queues_cmd}"
 
         work = ::Sidekiq.redis do |conn|
@@ -32,6 +34,7 @@ module Fairway
           work = UnitOfWork.new(*work)
         else
           ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got nil"
+          sleep 1 if options[:blocking]
         end
 
         work

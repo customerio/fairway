@@ -21,7 +21,7 @@ module Fairway
         ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work"
 
         fetch_order.each do |fetch|
-          work = fetch.retrieve_work
+          work = fetch.retrieve_work(blocking: false)
 
           if work
             ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got work"
@@ -30,6 +30,8 @@ module Fairway
         end
 
         ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got nil"
+        sleep 1
+
         return nil
       end
     end
