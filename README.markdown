@@ -74,18 +74,16 @@ a facet in your configuration.
 
 ## Consuming messages from a queue
 
-Once you have messages on a queue, you'd like to pull them off an perform some
-processing on each message:
+Once you have messages on a queue, you can pull them off and process them:
 
     connection = Fairway::Connection.new
     queue      = Fairway::Queue.new(connection, "myqueue")
+    message    = queue.pull
 
-    queue.pull
-
-Behind the scenes, we're using a round-robin strategy to ensure equal weighting of
+Behind the scenes, fairway uses a round-robin strategy to ensure equal weighting of
 any facets which contain messages.
 
-If there are no messages in any facets of the queue, `queue.pull` will return `nil`.
+If there are no messages in any facets, `queue.pull` will return `nil`.
 
 ## Channeling messages
 
@@ -118,7 +116,7 @@ If you'd like to receive messages with channels that match a pattern:
 Now, messages from the channels `invite_friends`, `invite_pets`, `invite_parents` will
 be delivered to the `invite_queue`.
 
-## Pub/Sub
+## Subscribing to messages
 
 To listen for messages without the overhead of queuing them, you can subscribe:
 
@@ -137,10 +135,10 @@ If you'd like to only receive some messages, you can subscribe to just a particu
       # has a channel matching "invite_*"
     end
 
-## Sidekiq
+## Fairway and Sidekiq
 
-We don't want to create a new project for handling the processing of queued messages/jobs. For
-that reason, we've integrated fairway with Sidekiq.
+Fairway isn't meant to be a robust system for processing queued messages/jobs. To more reliably
+process queued messages, we've integrated with [Sidekiq](http://sidekiq.org/).
 
     require 'fairway/sidekiq'
 
@@ -151,6 +149,10 @@ that reason, we've integrated fairway with Sidekiq.
       fetch.from :sidekiq, 2
       fetch.from queues, 1 do |message|
         # translate message to normalized Sidekiq job, if needed
+        { "queue" => "fairway",
+          "class" => "FairwayMessageJob",
+          "args"  => [message],
+          "retry" => true }
       end
     end
 
@@ -158,7 +160,7 @@ that reason, we've integrated fairway with Sidekiq.
 normal sidekiq configuration.
 
 `fetch.from queues, 1` will pull messages from your fairway queue, and allow you to translate
-them into fairway jobs if you'd like.
+them into standard sidekiq jobs.
 
 The second parameters are fetch weights, so in the above example, we'll look for jobs first from
 your normal sidekiq queues twice as often as your fairway queues.
