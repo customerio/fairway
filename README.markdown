@@ -145,7 +145,7 @@ process queued messages, we've integrated with [Sidekiq](http://sidekiq.org/).
     connection = Fairway::Connection.new
     queues     = Fairway::Queue.new(connection, "myqueue", "yourqueue")
 
-    Sidekiq.options[:fetch] = Fairway::Sidekiq::Fetch do |fetch|
+    Sidekiq.options[:fetch] = Fairway::Sidekiq::Fetch.new do |fetch|
       fetch.from :sidekiq, 2
       fetch.from queues, 1 do |queue, message|
         # translate message to normalized Sidekiq job, if needed
