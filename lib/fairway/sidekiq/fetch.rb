@@ -1,38 +1,54 @@
 module Fairway
   module Sidekiq
-    class Fetch < ::Sidekiq::BasicFetch
-      def initialize(queue, &block)
-        @queue = queue
-        @message_to_job = block if block_given?
+    class Fetch
+      class Fetches
+        attr_reader :list
+
+        def from(queue, weight = 1)
+          queue = BasicFetch.new(::Sidekiq.options) if queue == :sidekiq
+
+          weight.times do
+            list << queue
+          end
+        end
+
+        def list
+          @list ||= []
+        end
       end
 
-      def retrieve_work(options = {})
-        options = { blocking: true }.merge(options)
+      def initialize(&block)
+        yield(@fetches = Fetches.new)
+      end
 
+      def new
+        self
+      end
+
+      def fetches
+        @fetches.list
+      end
+
+      def fetch_order
+        fetches.shuffle.uniq
+      end
+
+      def retrieve_work
         ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work"
-        unit_of_work = nil
 
-        fairway_queue, work = @queue.pull
+        fetch_order.each do |fetch|
+          work = fetch.retrieve_work(blocking: false)
 
-        if work
-          decoded_work = JSON.parse(work)
-
-          if @message_to_job
-            decoded_work = @message_to_job.call(fairway_queue, decoded_work)
-            work         = decoded_work.to_json
+          if work
+            ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got work"
+            return work
           end
-
-          unit_of_work = UnitOfWork.new(decoded_work["queue"], work)
         end
 
-        if unit_of_work
-          ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got work"
-        else
-          ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got nil"
-          sleep 1 if options[:blocking]
-        end
+        ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got nil"
+        sleep 1
 
-        unit_of_work
+        return nil
       end
     end
   end

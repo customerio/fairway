@@ -1,16 +1,39 @@
 require "spec_helper"
 
 module Fairway::Sidekiq
-  describe CompositeFetch do
+  describe Fetch do
     describe "#initialize" do
-      it "accepts a hash of fetches with priority" do
-        fetch = CompositeFetch.new(fetchA: 10, fetchB: 1)
+      it "accepts a block to define of fetches with priority" do
+        fetch = Fetch.new do |fetch|
+          fetch.from :fetchA, 10
+          fetch.from :fetchB, 1
+        end
+
         fetch.fetches.should == [Array.new(10, :fetchA), :fetchB].flatten
+      end
+
+      it "instantiates a BasicFetch if you fetch from the keyword :sidekiq" do
+        fetch = Fetch.new do |fetch|
+          fetch.from :sidekiq, 1
+        end
+
+        fetch.fetches.length.should == 1
+        fetch.fetches.first.should be_instance_of(BasicFetch)
+      end
+    end
+
+    describe "#new" do
+      it "returns itself to match Sidekiq fetch API" do
+        fetch = Fetch.new do |fetch|
+          fetch.from :fetchA, 1
+        end
+
+        fetch.new.should == fetch
       end
     end
 
     describe "#fetch_order" do
-      let(:fetch)  { CompositeFetch.new(fetchA: 10, fetchB: 1) }
+      let(:fetch)  { Fetch.new { |f| f.from :fetchA, 10; f.from :fetchB, 1 } }
 
       it "should shuffle and uniq fetches" do
         fetch.fetches.should_receive(:shuffle).and_return(fetch.fetches)
@@ -24,10 +47,10 @@ module Fairway::Sidekiq
     end
 
     describe "#retrieve_work" do
-      let(:work)     { mock(:work) }
+      let(:work)   { mock(:work)  }
       let(:fetchA) { mock(:fetch) }
       let(:fetchB) { mock(:fetch) }
-      let(:fetch)  { CompositeFetch.new(fetchA => 10, fetchB => 1) }
+      let(:fetch)  { Fetch.new { |f| f.from :fetchA, 10; f.from :fetchB, 1 } }
 
       before do
         fetch.stub(fetch_order: [fetchA, fetchB], sleep: nil)

@@ -2,10 +2,10 @@ require "spec_helper"
 
 module Fairway
   module Sidekiq
-    describe Fetch do
+    describe FairwayFetch do
       let(:queue) { Queue.new(Connection.new, "fairway") }
       let(:work)   { { queue: "golf_events", type: "swing", name: "putt" }.to_json }
-      let(:fetch)  { Fetch.new(queue) }
+      let(:fetch)  { FairwayFetch.new(queue) }
 
       it "requests work from the queue queue" do
         queue.stub(pull: ["fairway", work])
@@ -16,7 +16,7 @@ module Fairway
       end
 
       it "allows transforming of the message into a job" do
-        fetch = Fetch.new(queue) do |fairway_queue, message|
+        fetch = FairwayFetch.new(queue) do |fairway_queue, message|
           {
             "queue" => "my_#{message["queue"]}",
             "class" => "GolfEventJob"
