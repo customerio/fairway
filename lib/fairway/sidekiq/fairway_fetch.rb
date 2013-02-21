@@ -1,8 +1,10 @@
 module Fairway
   module Sidekiq
     class FairwayFetch < ::Sidekiq::BasicFetch
-      def initialize(queue, &block)
-        @queue = queue
+      attr_reader :queues
+
+      def initialize(queues, &block)
+        @queues = queues
         @message_to_job = block if block_given?
       end
 
@@ -12,7 +14,7 @@ module Fairway
         ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work"
         unit_of_work = nil
 
-        fairway_queue, work = @queue.pull
+        fairway_queue, work = @queues.pull
 
         if work
           decoded_work = JSON.parse(work)
@@ -33,6 +35,10 @@ module Fairway
         end
 
         unit_of_work
+      end
+
+      def ==(other)
+        other.respond_to?(:queues) && queues == other.queues
       end
     end
   end

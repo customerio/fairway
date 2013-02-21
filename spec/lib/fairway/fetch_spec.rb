@@ -9,7 +9,10 @@ module Fairway::Sidekiq
           fetch.from :fetchB, 1
         end
 
-        fetch.fetches.should == [Array.new(10, :fetchA), :fetchB].flatten
+        fetchA = FairwayFetch.new(:fetchA)
+        fetchB = FairwayFetch.new(:fetchB)
+
+        fetch.fetches.should == [Array.new(10, fetchA), fetchB].flatten
       end
 
       it "instantiates a BasicFetch if you fetch from the keyword :sidekiq" do
@@ -20,6 +23,17 @@ module Fairway::Sidekiq
         fetch.fetches.length.should == 1
         fetch.fetches.first.should be_instance_of(BasicFetch)
       end
+
+      it "instantiates a FairwayFetch if you fetch from a queue object" do
+        queue = Fairway::Queue.new(Fairway::Connection.new, "fairway")
+
+        fetch = Fetch.new do |fetch|
+          fetch.from queue, 1
+        end
+
+        fetch.fetches.length.should == 1
+        fetch.fetches.first.should be_instance_of(FairwayFetch)
+      end
     end
 
     describe "#new" do
@@ -28,7 +42,7 @@ module Fairway::Sidekiq
           fetch.from :fetchA, 1
         end
 
-        fetch.new.should == fetch
+        fetch.new({}).should == fetch
       end
     end
 

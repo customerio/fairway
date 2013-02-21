@@ -16,7 +16,10 @@ module Fairway
     end
 
     def ==(other)
-      connection == other.connection && queue_names == other.queue_names
+      other.respond_to?(:connection) &&
+      other.respond_to?(:queue_names) &&
+      connection == other.connection &&
+      queue_names == other.queue_names
     end
   end
 end

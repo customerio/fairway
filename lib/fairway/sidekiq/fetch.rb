@@ -4,8 +4,12 @@ module Fairway
       class Fetches
         attr_reader :list
 
-        def from(queue, weight = 1)
-          queue = BasicFetch.new(::Sidekiq.options) if queue == :sidekiq
+        def from(queue, weight = 1, &block)
+          if queue == :sidekiq
+            queue = BasicFetch.new(::Sidekiq.options)
+          else
+            queue = FairwayFetch.new(queue, &block)
+          end
 
           weight.times do
             list << queue
@@ -21,7 +25,7 @@ module Fairway
         yield(@fetches = Fetches.new)
       end
 
-      def new
+      def new(options)
         self
       end
 
