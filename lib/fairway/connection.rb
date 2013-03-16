@@ -6,10 +6,7 @@ module Fairway
 
     def initialize(config = Fairway.config)
       @config = config
-
-      @config.defined_queues.each do |queue|
-        scripts.register_queue(queue.name, queue.channel)
-      end
+      register_queues
     end
 
     def queues
@@ -33,6 +30,12 @@ module Fairway
         on.pmessage do |pattern, channel, message|
           block.call(channel, message)
         end
+      end
+    end
+
+    def register_queues
+      @config.defined_queues.each do |queue|
+        scripts.register_queue(queue.name, queue.channel)
       end
     end
 
