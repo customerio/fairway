@@ -93,8 +93,47 @@ module Fairway
           connection.deliver(message2 = message.merge(topic: "event:2"))
 
           queue = Queue.new(connection, "myqueue2", "myqueue1")
-          queue.pull.should == ["myqueue2", message2.to_json]
-          queue.pull.should == ["myqueue1", message1.to_json]
+
+          messages = [["myqueue1", message1.to_json], ["myqueue2", message2.to_json]]
+          messages.should include(queue.pull)
+          messages.should include(queue.pull)
+        end
+
+        it "randomized order of queues attempted to reduce starvation" do
+          queue = Queue.new(connection, "myqueue2", "myqueue1")
+
+          order = {}
+
+          queue.connection.scripts.stub(:fairway_pull) do |queues|
+            order[queues.join(":")] ||= 0
+            order[queues.join(":")] += 1
+          end
+
+          100.times { queue.pull }
+
+          order.keys.length.should == 2
+          order["myqueue2:myqueue1"].should > 0
+          order["myqueue1:myqueue2"].should > 0
+        end
+
+        it "allows weighting of queues for ordering" do
+          queue = Queue.new(connection, "myqueue2" => 10, "myqueue1" => 1)
+
+          queue.queue_names.should == [Array.new(10, "myqueue2"), "myqueue1"].flatten
+
+          order = {}
+
+          queue.connection.scripts.stub(:fairway_pull) do |queues|
+            order[queues.join(":")] ||= 0
+            order[queues.join(":")] += 1
+          end
+
+          100.times { queue.pull }
+
+          order.keys.length.should == 2
+          order["myqueue2:myqueue1"].should > 0
+          order["myqueue1:myqueue2"].should > 0
+          order["myqueue2:myqueue1"].should > order["myqueue1:myqueue2"]
         end
 
         it "returns nil if no queues have messages" do
@@ -108,11 +147,17 @@ module Fairway
           connection.deliver(message3 = message.merge(facet: 2, topic: "event:1"))
           connection.deliver(message4 = message.merge(facet: 1, topic: "event:2"))
 
+          queue1_messages = []
           queue = Queue.new(connection, "myqueue2", "myqueue1")
-          queue.pull.should == ["myqueue2", message4.to_json]
-          queue.pull.should == ["myqueue1", message1.to_json]
-          queue.pull.should == ["myqueue1", message3.to_json]
-          queue.pull.should == ["myqueue1", message2.to_json]
+
+          4.times do
+            message = queue.pull
+            queue1_messages << message if message.first == "myqueue1"
+          end
+
+          queue1_messages[0].should == ["myqueue1", message1.to_json]
+          queue1_messages[1].should == ["myqueue1", message3.to_json]
+          queue1_messages[2].should == ["myqueue1", message2.to_json]
         end
       end
     end
