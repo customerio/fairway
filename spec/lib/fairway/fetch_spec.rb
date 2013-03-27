@@ -91,6 +91,15 @@ module Fairway::Sidekiq
 
         fetch.retrieve_work
       end
+
+      it "doesn't sleep if blocking option is false" do
+        fetch.should_not_receive(:sleep)
+
+        fetchA.stub(retrieve_work: nil)
+        fetchB.stub(retrieve_work: nil)
+
+        fetch.retrieve_work(blocking: false)
+      end
     end
   end
 end

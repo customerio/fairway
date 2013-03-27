@@ -37,7 +37,9 @@ module Fairway
         fetches.shuffle.uniq
       end
 
-      def retrieve_work
+      def retrieve_work(options = {})
+        options = { blocking: true }.merge(options)
+
         ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work"
 
         fetch_order.each do |fetch|
@@ -50,7 +52,7 @@ module Fairway
         end
 
         ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work got nil"
-        sleep 1
+        sleep 1 if options[:blocking]
 
         return nil
       end
