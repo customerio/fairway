@@ -1,4 +1,4 @@
-# Fairway - a fair way to queue messages in multi-user systems.
+# Fairway - a fair way to queue messages in multi-user systems
 
 ## Installation
 
@@ -10,17 +10,19 @@ Then make sure you `bundle install`.
 
 ## Configuration
 
-    Fairway.configure do |config|
-      config.redis     = { host: "localhost", port: 6379 }
-      config.namespace = "fairway"
-    
-      config.facet do |message|
-        message[:user]
-      end
+```ruby
+Fairway.configure do |config|
+  config.redis     = { host: "localhost", port: 6379 }
+  config.namespace = "fairway"
 
-      config.register_queue("all_messages")
-    end
-    
+  config.facet do |message|
+    message[:user]
+  end
+
+  config.register_queue("all_messages")
+end
+```
+
 ## What's a facet?
 
 In many queuing systems, if a single user manages to queue up a lot of messages/jobs at once,
@@ -33,11 +35,13 @@ additional messages from a given facet.
 
 You can define how to facet your messages during configuration:
 
-    Fairway.configure do |config|
-      config.facet do |message|
-        message[:user]
-      end
-    end
+```ruby
+Fairway.configure do |config|
+  config.facet do |message|
+    message[:user]
+  end
+end
+```
 
 Now, any message delivered by fairway, will use the `user` key of the message to determine
 which facet to use.
@@ -52,22 +56,28 @@ and each queue will receive delivered messages.
 
 Registering a queue is part of your fairway configuration:
 
-    Fairway.configure do |config|
-      config.register_queue("myqueue")
-      config.register_queue("yourqueue")
-    end
+```ruby
+Fairway.configure do |config|
+  config.register_queue("myqueue")
+  config.register_queue("yourqueue")
+end
+```
 
 After configuring your queues, just create a fairway connection,
 and it'll handle persisting your queues in Redis:
 
-    connection = Fairway::Connection.new
+```ruby
+connection = Fairway::Connection.new
+```
 
 ## Delivering messages
 
 To add messages to your queues, you deliver them:
 
-    connection = Fairway::Connection.new
-    connection.deliver(type: "invite_friends", user: "bob", friends: ["nancy", "john"])
+```ruby
+connection = Fairway::Connection.new
+connection.deliver(type: "invite_friends", user: "bob", friends: ["nancy", "john"])
+```
 
 Now, any registered queues will receive this message, faceted if you've defined
 a facet in your configuration.
@@ -76,9 +86,11 @@ a facet in your configuration.
 
 Once you have messages on a queue, you can pull them off and process them:
 
-    connection = Fairway::Connection.new
-    queue      = Fairway::Queue.new(connection, "myqueue")
-    message    = queue.pull
+```ruby
+connection = Fairway::Connection.new
+queue      = Fairway::Queue.new(connection, "myqueue")
+message    = queue.pull
+```
 
 Behind the scenes, fairway uses a round-robin strategy to ensure equal weighting of
 any facets which contain messages.
@@ -94,24 +106,30 @@ You can accomplish this with message channels. By default, all messages use the 
 channel. You can customize this by creating a `Fairway::ChanneledConnection` and
 a block which defines the channel for a given message:
 
-    conn = Fairway::Connection.new
-    conn = Fairway::ChanneledConnection.new(conn) do |message|
-      message[:type]
-    end
+```ruby
+conn = Fairway::Connection.new
+conn = Fairway::ChanneledConnection.new(conn) do |message|
+  message[:type]
+end
+```
 
 You can also register queues for a channel:
 
-    Fairway.configure do |config|
-      config.register_queue("invite_queue", "invite_friends")
-    end
-    
+```ruby
+Fairway.configure do |config|
+  config.register_queue("invite_queue", "invite_friends")
+end
+```
+
 Now, your queue will only receive messages which have the channel `invite_friends`.
 
 If you'd like to receive messages with channels that match a pattern:
 
-    Fairway.configure do |config|
-      config.register_queue("invite_queue", "invite_.*")
-    end
+```ruby
+Fairway.configure do |config|
+  config.register_queue("invite_queue", "invite_.*")
+end
+```
 
 Now, messages from the channels `invite_friends`, `invite_pets`, `invite_parents` will
 be delivered to the `invite_queue`.
@@ -120,41 +138,47 @@ be delivered to the `invite_queue`.
 
 To listen for messages without the overhead of queuing them, you can subscribe:
 
-    connection = Fairway::Connection.new
+```ruby
+connection = Fairway::Connection.new
 
-    connection.subscribe do |message|
-      # Do something with each message
-    end
+connection.subscribe do |message|
+  # Do something with each message
+end
+```
 
 If you'd like to only receive some messages, you can subscribe to just a particular channel:
 
-    connection = Fairway::Connection.new
+```ruby
+connection = Fairway::Connection.new
 
-    connection.subscribe("invite_*") do |message|
-      # Do something with each message which
-      # has a channel matching "invite_*"
-    end
+connection.subscribe("invite_*") do |message|
+  # Do something with each message which
+  # has a channel matching "invite_*"
+end
+```
 
 ## Fairway and Sidekiq
 
 Fairway isn't meant to be a robust system for processing queued messages/jobs. To more reliably
 process queued messages, we've integrated with [Sidekiq](http://sidekiq.org/).
 
-    require 'fairway/sidekiq'
+```ruby
+require 'fairway/sidekiq'
 
-    connection = Fairway::Connection.new
-    queues     = Fairway::Queue.new(connection, "myqueue", "yourqueue")
+connection = Fairway::Connection.new
+queues     = Fairway::Queue.new(connection, "myqueue", "yourqueue")
 
-    Sidekiq.options[:fetch] = Fairway::Sidekiq::Fetch.new do |fetch|
-      fetch.from :sidekiq, 2
-      fetch.from queues, 1 do |queue, message|
-        # translate message to normalized Sidekiq job, if needed
-        { "queue" => "fairway",
-          "class" => "FairwayMessageJob",
-          "args"  => [message],
-          "retry" => true }
-      end
-    end
+Sidekiq.options[:fetch] = Fairway::Sidekiq::Fetch.new do |fetch|
+  fetch.from :sidekiq, 2
+  fetch.from queues, 1 do |queue, message|
+    # translate message to normalized Sidekiq job, if needed
+    { "queue" => "fairway",
+      "class" => "FairwayMessageJob",
+      "args"  => [message],
+      "retry" => true }
+  end
+end
+```
 
 `fetch.from :sidekiq, 2` will fetch from sidekiq queues you have defined through the
 normal sidekiq configuration.
