@@ -46,6 +46,22 @@ module Fairway::Sidekiq
       end
     end
 
+    describe "#bulk_requeue" do
+      it "requeues jobs to redis" do
+        uow = Sidekiq::BasicFetch::UnitOfWork
+        q1 = Sidekiq::Queue.new('foo')
+        q2 = Sidekiq::Queue.new('bar')
+
+        q1.size.should == 0
+        q2.size.should == 0
+
+        Fetch.bulk_requeue([uow.new('queue:foo', 'bob'), uow.new('queue:foo', 'bar'), uow.new('queue:bar', 'widget')])
+
+        q1.size.should == 2
+        q2.size.should == 1
+      end
+    end
+
     describe "#fetch_order" do
       let(:fetch)  { Fetch.new { |f| f.from :fetchA, 10; f.from :fetchB, 1 } }
 

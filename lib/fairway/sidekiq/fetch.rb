@@ -1,6 +1,6 @@
 module Fairway
   module Sidekiq
-    class Fetch
+    class Fetch < ::Sidekiq::BasicFetch
       class Fetches
         attr_reader :list
 
