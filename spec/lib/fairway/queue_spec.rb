@@ -8,7 +8,12 @@ module Fairway
         message[:topic]
       end
     end
-    let(:message)     { { facet: 1, topic: "event:helloworld" } }
+    let(:queue)   { Queue.new(connection, "myqueue") }
+    let(:message) { { facet: 1, topic: "event:helloworld" } }
+
+    before do
+      Fairway.config.register_queue("myqueue", "event:helloworld")
+    end
 
     describe "#initialize" do
       it "requires a Connection and queue names" do
@@ -17,12 +22,6 @@ module Fairway
     end
 
     describe "#length" do
-      let(:queue) { Queue.new(connection, "myqueue") }
-
-      before do
-        Fairway.config.register_queue("myqueue", "event:helloworld")
-      end
-
       it "returns the number of queued messages across facets" do
         queue.length.should == 0
 
@@ -40,16 +39,82 @@ module Fairway
       end
     end
 
-    describe "#pull" do
-      before do
-        Fairway.config.register_queue("myqueue", "event:helloworld")
+    describe "#active_facets" do
+      it "returns list of all facets who currently have messages" do
+        connection.deliver(message.merge(facet: 1, message: 1))
+        connection.deliver(message.merge(facet: 2, message: 2))
+        connection.deliver(message.merge(facet: 3, message: 3))
+
+        queue.pull
+
+        queue.active_facets.should == ["2", "3"]
       end
 
+      context "multiple queues" do
+        let(:queue) { Queue.new(connection, "myqueue1", "myqueue2") }
+
+        before do
+          Fairway.config.register_queue("myqueue1", "event:1")
+          Fairway.config.register_queue("myqueue2", "event:2")
+        end
+
+        it "returns list of all facets from multiple queues" do
+          connection.deliver(message.merge(topic: "event:1", facet: 1, message: 1))
+          connection.deliver(message.merge(topic: "event:1", facet: 2, message: 2))
+          connection.deliver(message.merge(topic: "event:1", facet: 3, message: 2))
+          connection.deliver(message.merge(topic: "event:2", facet: 3, message: 3))
+
+          queue.active_facets.should == ["1", "2", "3"]
+        end
+      end
+    end
+
+    describe "#facet_length" do
+      it "returns number of messages queues for a given facet" do
+        connection.deliver(message.merge(facet: 1, message: 1))
+        connection.deliver(message.merge(facet: 1, message: 2))
+        connection.deliver(message.merge(facet: 2, message: 3))
+
+        queue.facet_length(1).should == 2
+        queue.facet_length(2).should == 1
+        queue.facet_length(3).should == 0
+      end
+
+      context "multiple queues" do
+        let(:queue) { Queue.new(connection, "myqueue1", "myqueue2") }
+
+        before do
+          Fairway.config.register_queue("myqueue1", "event:1")
+          Fairway.config.register_queue("myqueue2", "event:2")
+        end
+
+        it "sums number of messages for facet across all queues" do
+          connection.deliver(message.merge(topic: "event:1", facet: 1, message: 1))
+          connection.deliver(message.merge(topic: "event:1", facet: 2, message: 2))
+          connection.deliver(message.merge(topic: "event:1", facet: 3, message: 2))
+          connection.deliver(message.merge(topic: "event:2", facet: 3, message: 3))
+
+          queue.facet_length(1).should == 1
+          queue.facet_length(2).should == 1
+          queue.facet_length(3).should == 2
+        end
+      end
+    end
+
+    describe "#peek" do
+      it "returns, but doesn't remove the next message to be pulled" do
+        connection.deliver(message1 = message.merge(message: 1))
+        queue.peek.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should be_nil
+      end
+    end
+
+    describe "#pull" do
       it "pulls a message off the queue using FIFO strategy" do
         connection.deliver(message1 = message.merge(message: 1))
         connection.deliver(message2 = message.merge(message: 2))
 
-        queue = Queue.new(connection, "myqueue")
         queue.pull.should == ["myqueue", message1.to_json]
         queue.pull.should == ["myqueue", message2.to_json]
       end
@@ -59,7 +124,6 @@ module Fairway
         connection.deliver(message2 = message.merge(facet: 1, message: 2))
         connection.deliver(message3 = message.merge(facet: 2, message: 3))
 
-        queue = Queue.new(connection, "myqueue")
         queue.pull.should == ["myqueue", message1.to_json]
         queue.pull.should == ["myqueue", message3.to_json]
         queue.pull.should == ["myqueue", message2.to_json]
@@ -68,21 +132,21 @@ module Fairway
       it "removes facet from active list if it becomes empty" do
         connection.deliver(message)
 
-        Fairway.config.redis.smembers("myqueue:active_facets").should == ["1"]
-        queue = Queue.new(connection, "myqueue")
+        queue.active_facets.should == ["1"]
         queue.pull
-        Fairway.config.redis.smembers("myqueue:active_facets").should be_empty
+        queue.active_facets.should be_empty
       end
 
       it "returns nil if there are no messages to retrieve" do
         connection.deliver(message)
 
-        queue = Queue.new(connection, "myqueue")
         queue.pull.should == ["myqueue", message.to_json]
         queue.pull.should be_nil
       end
 
       context "pulling from multiple queues" do
+        let(:queue) { Queue.new(connection, "myqueue2", "myqueue1") }
+
         before do
           Fairway.config.register_queue("myqueue1", "event:1")
           Fairway.config.register_queue("myqueue2", "event:2")
@@ -92,16 +156,12 @@ module Fairway
           connection.deliver(message1 = message.merge(topic: "event:1"))
           connection.deliver(message2 = message.merge(topic: "event:2"))
 
-          queue = Queue.new(connection, "myqueue2", "myqueue1")
-
           messages = [["myqueue1", message1.to_json], ["myqueue2", message2.to_json]]
           messages.should include(queue.pull)
           messages.should include(queue.pull)
         end
 
         it "randomized order of queues attempted to reduce starvation" do
-          queue = Queue.new(connection, "myqueue2", "myqueue1")
-
           order = {}
 
           queue.connection.scripts.stub(:fairway_pull) do |queues|
@@ -137,7 +197,6 @@ module Fairway
         end
 
         it "returns nil if no queues have messages" do
-          queue = Queue.new(connection, "myqueue2", "myqueue1")
           queue.pull.should be_nil
         end
 
@@ -148,7 +207,6 @@ module Fairway
           connection.deliver(message4 = message.merge(facet: 1, topic: "event:2"))
 
           queue1_messages = []
-          queue = Queue.new(connection, "myqueue2", "myqueue1")
 
           4.times do
             message = queue.pull
