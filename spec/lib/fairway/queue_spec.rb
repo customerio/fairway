@@ -220,6 +220,77 @@ module Fairway
       end
     end
 
+    describe "priority" do
+      let(:facet1) { message.merge(facet: 1) }
+      let(:facet2) { message.merge(facet: 2) }
+
+      it "defaults all facets to a priority of 1" do
+        queue.priority(1).should == 1
+      end
+
+      it "doesn't allow negative priority" do
+        lambda { queue.set_priority(1, -1) }.should raise_error(Queue::InvalidPriorityError)
+      end
+
+      it "doesn't pull messages from a facet with priority of 0" do
+        queue.set_priority(1, 0)
+        connection.deliver(facet1)
+        queue.pull.should be_nil
+      end
+
+      it "lazily adjusts priority on pull" do
+        connection.deliver(facet1)
+        connection.deliver(facet1)
+
+        queue.set_priority(1, 0)
+
+        queue.pull.should == ["myqueue", facet1.to_json]
+        queue.pull.be_nil
+      end
+
+      it "pulls more messages from facets with higher priority" do
+        connection.deliver(facet1)
+        connection.deliver(facet1)
+        connection.deliver(facet2)
+        connection.deliver(facet2)
+        connection.deliver(facet1)
+        connection.deliver(facet1)
+        connection.deliver(facet1)
+
+        queue.set_priority(1, 2)
+
+        queue.pull.should == [anything(), facet1.to_json]
+        queue.pull.should == [anything(), facet2.to_json]
+        queue.pull.should == [anything(), facet1.to_json]
+        queue.pull.should == [anything(), facet1.to_json]
+        queue.pull.should == [anything(), facet2.to_json]
+        queue.pull.should == [anything(), facet1.to_json]
+        queue.pull.should == [anything(), facet1.to_json]
+        queue.pull.should == [anything(), facet2.to_json]
+        queue.pull.should be_nil
+      end
+
+      it "only pulls messages from higher priority facets if enough messages exist" do
+        connection.deliver(facet1)
+        connection.deliver(facet1)
+        connection.deliver(facet1)
+        connection.deliver(facet2)
+        connection.deliver(facet2)
+        connection.deliver(facet2)
+
+        queue.set_priority(1, 10)
+
+        queue.pull.should == [anything(), facet1.to_json]
+        queue.pull.should == [anything(), facet2.to_json]
+        queue.pull.should == [anything(), facet1.to_json]
+        queue.pull.should == [anything(), facet1.to_json]
+        queue.pull.should == [anything(), facet2.to_json]
+        queue.pull.should == [anything(), facet2.to_json]
+        queue.pull.should == [anything(), facet2.to_json]
+        queue.pull.should be_nil
+      end
+    end
+
     describe "equality" do
       it "should equal queues with same connection and queue names" do
         Queue.new(connection, "a", "b", "c").should == Queue.new(connection, "a", "b", "c")

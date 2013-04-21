@@ -1,5 +1,7 @@
 module Fairway
   class Queue
+    class InvalidPriorityError < Exception; end
+
     attr_reader :connection, :queue_names
 
     def initialize(connection, *queue_names)
