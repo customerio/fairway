@@ -25,6 +25,20 @@ module Fairway
       end.sum
     end
 
+    def priority(facet)
+      priorities = each_queue do |queue|
+        (redis.hget("#{queue}:priorities", facet) || 1).to_i
+      end
+    end
+
+    def set_priority(facet, priority)
+      validate_priority!(priority)
+
+      each_queue do |queue|
+        redis.hset("#{queue}:priorities", facet, priority.to_i)
+      end
+    end
+
     def peek
       scripts.fairway_peek(@queue_names.shuffle.uniq)
     end
@@ -49,6 +63,12 @@ module Fairway
     def each_queue(&block)
       unique_queues.map do |queue|
         yield(queue)
+      end
+    end
+
+    def validate_priority!(priority)
+      if priority.to_i.to_s != priority.to_s || priority.to_i < 0
+        raise InvalidPriorityError.new("Queue facet priority must be an integer >= 0")
       end
     end
 

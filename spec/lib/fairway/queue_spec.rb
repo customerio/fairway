@@ -225,7 +225,20 @@ module Fairway
       let(:facet2) { message.merge(facet: 2) }
 
       it "defaults all facets to a priority of 1" do
-        queue.priority(1).should == 1
+        queue.priority(1).should == [1]
+      end
+
+      it "allows positive integer priority" do
+        queue.set_priority(1, 5)
+        queue.priority(1).should == [5]
+      end
+
+      it "doesn't allow non integer priority" do
+        lambda { queue.set_priority(1, "hello") }.should raise_error(Queue::InvalidPriorityError)
+      end
+
+      it "doesn't allow non integer priority" do
+        lambda { queue.set_priority(1, "1.23") }.should raise_error(Queue::InvalidPriorityError)
       end
 
       it "doesn't allow negative priority" do
@@ -245,12 +258,13 @@ module Fairway
         queue.set_priority(1, 0)
 
         queue.pull.should == ["myqueue", facet1.to_json]
-        queue.pull.be_nil
+        queue.pull.should be_nil
       end
 
       it "pulls more messages from facets with higher priority" do
         connection.deliver(facet1)
         connection.deliver(facet1)
+        connection.deliver(facet2)
         connection.deliver(facet2)
         connection.deliver(facet2)
         connection.deliver(facet1)
@@ -259,14 +273,14 @@ module Fairway
 
         queue.set_priority(1, 2)
 
-        queue.pull.should == [anything(), facet1.to_json]
-        queue.pull.should == [anything(), facet2.to_json]
-        queue.pull.should == [anything(), facet1.to_json]
-        queue.pull.should == [anything(), facet1.to_json]
-        queue.pull.should == [anything(), facet2.to_json]
-        queue.pull.should == [anything(), facet1.to_json]
-        queue.pull.should == [anything(), facet1.to_json]
-        queue.pull.should == [anything(), facet2.to_json]
+        queue.pull.should == ["myqueue", facet1.to_json]
+        queue.pull.should == ["myqueue", facet2.to_json]
+        queue.pull.should == ["myqueue", facet1.to_json]
+        queue.pull.should == ["myqueue", facet1.to_json]
+        queue.pull.should == ["myqueue", facet2.to_json]
+        queue.pull.should == ["myqueue", facet1.to_json]
+        queue.pull.should == ["myqueue", facet1.to_json]
+        queue.pull.should == ["myqueue", facet2.to_json]
         queue.pull.should be_nil
       end
 
@@ -277,17 +291,35 @@ module Fairway
         connection.deliver(facet2)
         connection.deliver(facet2)
         connection.deliver(facet2)
+        connection.deliver(facet2)
 
         queue.set_priority(1, 10)
 
-        queue.pull.should == [anything(), facet1.to_json]
-        queue.pull.should == [anything(), facet2.to_json]
-        queue.pull.should == [anything(), facet1.to_json]
-        queue.pull.should == [anything(), facet1.to_json]
-        queue.pull.should == [anything(), facet2.to_json]
-        queue.pull.should == [anything(), facet2.to_json]
-        queue.pull.should == [anything(), facet2.to_json]
+        queue.pull.should == ["myqueue", facet1.to_json]
+        queue.pull.should == ["myqueue", facet2.to_json]
+        queue.pull.should == ["myqueue", facet1.to_json]
+        queue.pull.should == ["myqueue", facet1.to_json]
+        queue.pull.should == ["myqueue", facet2.to_json]
+        queue.pull.should == ["myqueue", facet2.to_json]
+        queue.pull.should == ["myqueue", facet2.to_json]
         queue.pull.should be_nil
+      end
+
+      context "multiple queues" do
+        let(:queue) { Queue.new(connection, "myqueue2", "myqueue1") }
+
+        it "returns priority for each queue" do
+          queue.priority(1).should == [1, 1]
+
+          Queue.new(connection, "myqueue1").set_priority(1, 2)
+
+          queue.priority(1).should == [1, 2]
+        end
+
+        it "sets priority on each queue" do
+          queue.set_priority(1, 2)
+          queue.priority(1).should == [2, 2]
+        end
       end
     end
 
