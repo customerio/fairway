@@ -56,6 +56,10 @@ module Fairway
 
         return nil
       end
+
+      def bulk_requeue(inprogress)
+        self.class.bulk_requeue(inprogress)
+      end
     end
   end
 end

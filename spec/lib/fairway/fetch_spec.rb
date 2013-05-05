@@ -60,6 +60,20 @@ module Fairway::Sidekiq
         q1.size.should == 2
         q2.size.should == 1
       end
+
+      it "requeues jobs to redis from instance" do
+        uow = Sidekiq::BasicFetch::UnitOfWork
+        q1 = Sidekiq::Queue.new('foo')
+        q2 = Sidekiq::Queue.new('bar')
+
+        q1.size.should == 0
+        q2.size.should == 0
+
+        Fetch.new{ |f| }.bulk_requeue([uow.new('queue:foo', 'bob'), uow.new('queue:foo', 'bar'), uow.new('queue:bar', 'widget')])
+
+        q1.size.should == 2
+        q2.size.should == 1
+      end
     end
 
     describe "#fetch_order" do
