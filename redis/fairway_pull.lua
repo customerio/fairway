@@ -9,10 +9,10 @@ end
 -- provided queues, and return a message
 -- from the first one that isn't empty.
 for i, queue in ipairs(ARGV) do
-  local set_priorities  = k(queue, 'priorities');
-  local real_priorities = k(queue, 'current_priorities');
-  local active_facets   = k(queue, 'active_facets');
-  local round_robin     = k(queue, 'facet_queue');
+  local priorities    = k(queue, 'priorities');
+  local active_facets = k(queue, 'active_facets');
+  local round_robin   = k(queue, 'facet_queue');
+  local facet_pool    = k(queue, 'facet_pool');
 
   -- Pull a facet from the round-robin list.
   -- This list guarantees each active facet will have a
@@ -49,8 +49,8 @@ for i, queue in ipairs(ARGV) do
     -- have changed, so we'll check and update the
     -- current facet's priority if needed.
     else
-      local priority = tonumber(redis.call('hget', set_priorities, facet)) or 1
-      local current  = tonumber(redis.call('hget', real_priorities, facet))
+      local priority = tonumber(redis.call('hget', priorities, facet)) or 1
+      local current  = tonumber(redis.call('hget', facet_pool, facet))
 
       -- If the current priority is less than the
       -- desired priority, let's increase the priority
@@ -63,7 +63,7 @@ for i, queue in ipairs(ARGV) do
       if current < priority and length > current then
         redis.call('lpush', round_robin, facet);
         redis.call('lpush', round_robin, facet);
-        redis.call('hset', real_priorities, facet, current + 1);
+        redis.call('hset', facet_pool, facet, current + 1);
         
       -- If the current priority is greater than the
       -- desired priority, let's decrease the priority
@@ -76,7 +76,7 @@ for i, queue in ipairs(ARGV) do
       -- never exceeds the number of messages for a given
       -- facet.
       elseif current > priority or current > length then
-        redis.call('hset', real_priorities, facet, current - 1);
+        redis.call('hset', facet_pool, facet, current - 1);
       
       -- If the current priority is equals the
       -- desired priority, let's maintain the current priority
