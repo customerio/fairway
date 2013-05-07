@@ -19,9 +19,10 @@ for i = 1, #registered_queues, 2 do
   -- If the message topic matches the queue topic,
   -- we deliver the message to the queue.
   if string.find(topic, queue_topic) then
-    local set_priorities = k(queue, 'priorities');
-    local active_facets  = k(queue, 'active_facets');
-    local round_robin    = k(queue, 'facet_queue');
+    local set_priorities  = k(queue, 'priorities');
+    local real_priorities = k(queue, 'current_priorities');
+    local active_facets   = k(queue, 'active_facets');
+    local round_robin     = k(queue, 'facet_queue');
 
     -- Delivering the message to a queue is as simple as
     -- pushing it onto the facet's message list, and
@@ -35,11 +36,20 @@ for i = 1, #registered_queues, 2 do
     if redis.call('sadd', active_facets, facet) == 1 then
       local priority = tonumber(redis.call('hget', set_priorities, facet)) or 1
 
-      -- If the facet currently has a priority of 0,
-      -- then we shouldn't process any of the facet's
-      -- messages. Don't push it on the round-robin queue.
+      -- If the facet currently has a priority
+      -- we need to jump start the facet by adding
+      -- it to the round-robin queue and updating
+      -- the current priority.
       if priority > 0 then
         redis.call('lpush', round_robin, facet);
+        redis.call('hset', real_priorities, facet, 1);
+      
+      -- If the facet has no set priority, just set the
+      -- current priority to zero. Since the facet just
+      -- became active, we can be sure it's already zero
+      -- or undefined.
+      else
+        redis.call('hset', real_priorities, facet, 0);
       end
     end
   end

@@ -259,6 +259,32 @@ module Fairway
         queue.pull.should == ["myqueue", message2.to_json]
         queue.pull.should be_nil
       end
+
+      it "properly increments priority from 0" do
+        facet1.priority = 0
+
+        connection.deliver(message1)
+
+        queue.pull.should be_nil
+
+        facet1.priority = 1
+
+        queue.pull.should == ["myqueue", message1.to_json]
+      end
+
+      it "rapidly changing priority from 0 to 1 works properly" do
+        connection.deliver(message1)
+
+        facet1.priority = 0
+        facet1.priority = 1
+
+        connection.deliver(message1)
+        connection.deliver(message2)
+
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message2.to_json]
+        queue.pull.should == ["myqueue", message1.to_json]
+      end
     end
 
     describe "equality" do

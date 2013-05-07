@@ -25,7 +25,7 @@ module Fairway
       validate_priority!(priority)
 
       each_queue do |queue|
-        redis.hset(priority_key(queue), name, priority)
+        scripts.fairway_priority(queue, name, priority)
       end
     end
 
@@ -48,6 +48,10 @@ module Fairway
 
     def redis
       queue.redis
+    end
+
+    def scripts
+      queue.scripts
     end
 
     def each_queue(&block)

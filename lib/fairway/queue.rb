@@ -48,11 +48,11 @@ module Fairway
       @connection.redis
     end
 
-    private
-
     def scripts
       @connection.scripts
     end
+
+    private
 
     def parse_queue_names(names)
       [].tap do |queues|

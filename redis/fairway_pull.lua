@@ -50,7 +50,7 @@ for i, queue in ipairs(ARGV) do
     -- current facet's priority if needed.
     else
       local priority = tonumber(redis.call('hget', set_priorities, facet)) or 1
-      local current  = tonumber(redis.call('hget', real_priorities, facet)) or 1
+      local current  = tonumber(redis.call('hget', real_priorities, facet))
 
       -- If the current priority is less than the
       -- desired priority, let's increase the priority
