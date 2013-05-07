@@ -47,7 +47,10 @@ module Fairway
 
         queue.pull
 
-        queue.active_facets.should == ["2", "3"]
+        queue.active_facets.should == [
+          Facet.new(queue, "2"),
+          Facet.new(queue, "3")
+        ]
       end
 
       context "multiple queues" do
@@ -64,39 +67,11 @@ module Fairway
           connection.deliver(message.merge(topic: "event:1", facet: 3, message: 2))
           connection.deliver(message.merge(topic: "event:2", facet: 3, message: 3))
 
-          queue.active_facets.should == ["1", "2", "3"]
-        end
-      end
-    end
-
-    describe "#facet_length" do
-      it "returns number of messages queues for a given facet" do
-        connection.deliver(message.merge(facet: 1, message: 1))
-        connection.deliver(message.merge(facet: 1, message: 2))
-        connection.deliver(message.merge(facet: 2, message: 3))
-
-        queue.facet_length(1).should == 2
-        queue.facet_length(2).should == 1
-        queue.facet_length(3).should == 0
-      end
-
-      context "multiple queues" do
-        let(:queue) { Queue.new(connection, "myqueue1", "myqueue2") }
-
-        before do
-          Fairway.config.register_queue("myqueue1", "event:1")
-          Fairway.config.register_queue("myqueue2", "event:2")
-        end
-
-        it "sums number of messages for facet across all queues" do
-          connection.deliver(message.merge(topic: "event:1", facet: 1, message: 1))
-          connection.deliver(message.merge(topic: "event:1", facet: 2, message: 2))
-          connection.deliver(message.merge(topic: "event:1", facet: 3, message: 2))
-          connection.deliver(message.merge(topic: "event:2", facet: 3, message: 3))
-
-          queue.facet_length(1).should == 1
-          queue.facet_length(2).should == 1
-          queue.facet_length(3).should == 2
+          queue.active_facets.should == [
+            Facet.new(queue, "1"),
+            Facet.new(queue, "2"),
+            Facet.new(queue, "3")
+          ]
         end
       end
     end
@@ -132,7 +107,7 @@ module Fairway
       it "removes facet from active list if it becomes empty" do
         connection.deliver(message)
 
-        queue.active_facets.should == ["1"]
+        queue.active_facets.should == [Facet.new(queue, "1")]
         queue.pull
         queue.active_facets.should be_empty
       end
@@ -217,6 +192,98 @@ module Fairway
           queue1_messages[1].should == ["myqueue1", message3.to_json]
           queue1_messages[2].should == ["myqueue1", message2.to_json]
         end
+      end
+    end
+
+    describe "priority" do
+      let(:facet1)   { Facet.new(queue, 1) }
+      let(:message1) { message.merge(facet: 1) }
+      let(:message2) { message.merge(facet: 2) }
+
+      it "doesn't pull messages from a facet with priority of 0" do
+        facet1.priority = 0
+        connection.deliver(message1)
+        queue.pull.should be_nil
+      end
+
+      it "lazily adjusts priority on pull" do
+        connection.deliver(message1)
+        connection.deliver(message1)
+
+        facet1.priority = 0
+
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should be_nil
+      end
+
+      it "pulls more messages from facets with higher priority" do
+        connection.deliver(message1)
+        connection.deliver(message1)
+        connection.deliver(message2)
+        connection.deliver(message2)
+        connection.deliver(message2)
+        connection.deliver(message1)
+        connection.deliver(message1)
+        connection.deliver(message1)
+
+        facet1.priority = 2
+
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message2.to_json]
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message2.to_json]
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message2.to_json]
+        queue.pull.should be_nil
+      end
+
+      it "only pulls messages from higher priority facets if enough messages exist" do
+        connection.deliver(message1)
+        connection.deliver(message1)
+        connection.deliver(message1)
+        connection.deliver(message2)
+        connection.deliver(message2)
+        connection.deliver(message2)
+        connection.deliver(message2)
+
+        facet1.priority = 10
+
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message2.to_json]
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message2.to_json]
+        queue.pull.should == ["myqueue", message2.to_json]
+        queue.pull.should == ["myqueue", message2.to_json]
+        queue.pull.should be_nil
+      end
+
+      it "properly increments priority from 0" do
+        facet1.priority = 0
+
+        connection.deliver(message1)
+
+        queue.pull.should be_nil
+
+        facet1.priority = 1
+
+        queue.pull.should == ["myqueue", message1.to_json]
+      end
+
+      it "rapidly changing priority from 0 to 1 works properly" do
+        connection.deliver(message1)
+
+        facet1.priority = 0
+        facet1.priority = 1
+
+        connection.deliver(message1)
+        connection.deliver(message2)
+
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message2.to_json]
+        queue.pull.should == ["myqueue", message1.to_json]
       end
     end
 
