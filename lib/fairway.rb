@@ -10,6 +10,7 @@ require "fairway/scripts"
 require "fairway/channeled_connection"
 require "fairway/connection"
 require "fairway/queue"
+require "fairway/facet"
 
 module Fairway
   def self.config

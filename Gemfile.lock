@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    fairway (0.0.10)
+    fairway (0.0.11)
       activesupport
       hiredis
       redis
