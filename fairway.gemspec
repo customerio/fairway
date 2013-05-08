@@ -20,5 +20,5 @@ Gem::Specification.new do |gem|
   gem.add_dependency("activesupport")
   gem.add_dependency("redis")
   gem.add_dependency("hiredis")
-  gem.add_dependency("redis-namespace")
+  gem.add_dependency("redis-namespace", ">= 1.3.0")
 end

@@ -26,7 +26,7 @@ module Fairway
             return nil;
           SCRIPT
 
-          conn.eval(script, queues_cmd.map{|q| "#{namespace}#{q}"})
+          conn.eval(script, queues_cmd)
         end
 
         if (work)
@@ -42,25 +42,6 @@ module Fairway
 
       def queues_cmd
         @queues.shuffle.uniq
-      end
-
-      def namespace
-        @namespace ||= begin
-          namespaces = []
-
-          ::Sidekiq.redis do |conn|
-            wrapper = conn
-
-            while defined?(wrapper.redis)
-              namespaces.unshift(wrapper.namespace)
-              wrapper = wrapper.redis
-            end
-
-            namespace = namespaces.join(":")
-            namespace += ":" unless namespace.blank?
-            namespace
-          end
-        end
       end
     end
   end
