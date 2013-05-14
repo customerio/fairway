@@ -285,6 +285,25 @@ module Fairway
         queue.pull.should == ["myqueue", message2.to_json]
         queue.pull.should == ["myqueue", message1.to_json]
       end
+
+      it "defaults current priority to 1 if currently nil (migration from 0.0.x to 0.1.x scenario)" do
+        connection.deliver(message1)
+        connection.deliver(message1)
+        connection.deliver(message2)
+        connection.deliver(message2)
+        connection.deliver(message2)
+        connection.deliver(message1)
+
+        connection.redis.del("myqueue:facet_pool")
+
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message2.to_json]
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message2.to_json]
+        queue.pull.should == ["myqueue", message1.to_json]
+        queue.pull.should == ["myqueue", message2.to_json]
+        queue.pull.should be_nil
+      end
     end
 
     describe "equality" do
