@@ -39,6 +39,10 @@ module Fairway
       end
     end
 
+    def unregister_queue(name)
+      scripts.unregister_queue(name)
+    end
+
     def scripts
       @config.scripts
     end

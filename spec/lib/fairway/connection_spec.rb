@@ -78,6 +78,19 @@ module Fairway
           redis.llen("myqueue:facet_queue").should == 0
         end
       end
+
+      context "unregistering a queue" do
+        before do
+          Fairway.config.register_queue("myqueue")
+        end
+
+        it "stops adding messages to the queue" do
+          connection.deliver(message)
+          connection.unregister_queue("myqueue")
+          connection.deliver(message)
+          redis.llen("myqueue:1").should == 1
+        end
+      end
     end
   end
 end

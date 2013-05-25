@@ -306,6 +306,70 @@ module Fairway
       end
     end
 
+    describe "#destroy" do
+      let(:facet) { Facet.new(queue, 1) }
+
+      it "removes all queued messages" do
+        connection.deliver(message)
+        queue.length.should == 1
+        facet.length.should == 1
+        queue.destroy
+        queue.length.should == 0
+        facet.length.should == 0
+      end
+
+      it "removes all facets" do
+        connection.deliver(message)
+        queue.active_facets.length.should == 1
+        queue.destroy
+        queue.active_facets.length.should == 0
+      end
+
+      it "removes any redis keys related to the queue" do
+        connection.deliver(message)
+
+        connection.redis.keys("myqueue:*").length.should > 0
+
+        queue.destroy
+
+        connection.redis.keys("myqueue:*").length.should == 0
+      end
+
+      context "multiple queues" do
+        let(:queue) { Queue.new(connection, "myqueue2", "myqueue1") }
+
+        before do
+          Fairway.config.register_queue("myqueue1", "event:1")
+          Fairway.config.register_queue("myqueue2", "event:2")
+
+          connection.deliver(message.merge(topic: "event:1"))
+          connection.deliver(message.merge(topic: "event:2"))
+        end
+
+        it "destroys both queues" do
+          queue.length.should == 2
+          queue.destroy
+          queue.length.should == 0
+        end
+
+        it "removes all facets" do
+          queue.active_facets.length.should == 1
+          queue.destroy
+          queue.active_facets.length.should == 0
+        end
+
+        it "removes any redis keys related both queues" do
+          connection.redis.keys("myqueue1:*").length.should > 0
+          connection.redis.keys("myqueue2:*").length.should > 0
+
+          queue.destroy
+
+          connection.redis.keys("myqueue1:*").length.should == 0
+          connection.redis.keys("myqueue2:*").length.should == 0
+        end
+      end
+    end
+
     describe "equality" do
       it "should equal queues with same connection and queue names" do
         Queue.new(connection, "a", "b", "c").should == Queue.new(connection, "a", "b", "c")

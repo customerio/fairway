@@ -16,6 +16,10 @@ module Fairway
       @redis.hset(registered_queues_key, name, channel)
     end
 
+    def unregister_queue(name)
+      @redis.hdel(registered_queues_key, name)
+    end
+
     def registered_queues
       @redis.hgetall(registered_queues_key)
     end

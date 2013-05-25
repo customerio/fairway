@@ -19,7 +19,17 @@ module Fairway
       end
     end
 
-    describe "#registered_queue" do
+    describe "#unregister_queue" do
+      let(:scripts) { Scripts.new(Redis.new, "foo") }
+
+      it "removes the queue and channel from the hash of registered queues" do
+        scripts.register_queue("name", "channel")
+        scripts.unregister_queue("name")
+        Redis.new.hgetall("foo:registered_queues").should == {}
+      end
+    end
+
+    describe "#registered_queues" do
       let(:scripts) { Scripts.new(Redis.new, "foo") }
 
       it "returns hash of all registered queues and their channels" do

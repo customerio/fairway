@@ -18,7 +18,7 @@ module Fairway
     end
 
     def length
-      redis.mget(unique_queues.map{|q| "#{q}:length" }).sum.to_i
+      redis.mget(unique_queues.map{|q| "#{q}:length" }).map(&:to_i).sum
     end
 
     def peek
@@ -42,6 +42,10 @@ module Fairway
 
     def queue_key
       queue
+    end
+
+    def destroy
+      scripts.fairway_destroy(unique_queues)
     end
 
     def redis
