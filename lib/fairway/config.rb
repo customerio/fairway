@@ -54,7 +54,7 @@ module Fairway
     end
 
     def raw_redis
-      Redis.new(@redis_options.merge(hiredis: true))
+      Redis.new(@redis_options)
     end
   end
 end
