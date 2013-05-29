@@ -294,7 +294,9 @@ module Fairway
         connection.deliver(message2)
         connection.deliver(message1)
 
-        connection.redis.del("myqueue:facet_pool")
+        connection.redis.with do |conn|
+          conn.del("myqueue:facet_pool")
+        end
 
         queue.pull.should == ["myqueue", message1.to_json]
         queue.pull.should == ["myqueue", message2.to_json]
@@ -328,11 +330,13 @@ module Fairway
       it "removes any redis keys related to the queue" do
         connection.deliver(message)
 
-        connection.redis.keys("myqueue:*").length.should > 0
+        connection.redis.with do |conn|
+          conn.keys("myqueue:*").length.should > 0
 
-        queue.destroy
+          queue.destroy
 
-        connection.redis.keys("myqueue:*").length.should == 0
+          conn.keys("myqueue:*").length.should == 0
+        end
       end
 
       context "multiple queues" do
@@ -359,13 +363,15 @@ module Fairway
         end
 
         it "removes any redis keys related both queues" do
-          connection.redis.keys("myqueue1:*").length.should > 0
-          connection.redis.keys("myqueue2:*").length.should > 0
+          connection.redis.with do |conn|
+            conn.keys("myqueue1:*").length.should > 0
+            conn.keys("myqueue2:*").length.should > 0
 
-          queue.destroy
+            queue.destroy
 
-          connection.redis.keys("myqueue1:*").length.should == 0
-          connection.redis.keys("myqueue2:*").length.should == 0
+            conn.keys("myqueue1:*").length.should == 0
+            conn.keys("myqueue2:*").length.should == 0
+          end
         end
       end
     end

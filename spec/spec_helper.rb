@@ -27,10 +27,10 @@ RSpec.configure do |config|
       config.facet { |message| message[:facet] }
     end
 
-    Fairway::Config.new.redis.flushdb
+    Fairway::Config.new.redis.with{ |r| r.flushdb }
   end
 
   config.after(:each) do
-    Fairway::Config.new.redis.flushdb
+    Fairway::Config.new.redis.with{ |r| r.flushdb }
   end
 end

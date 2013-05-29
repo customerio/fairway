@@ -26,9 +26,11 @@ module Fairway
     end
 
     def subscribe(channel_pattern, &block)
-      redis.psubscribe(channel_pattern) do |on|
-        on.pmessage do |pattern, channel, message|
-          block.call(channel, message)
+      redis do |conn|
+        conn.psubscribe(channel_pattern) do |on|
+          on.pmessage do |pattern, channel, message|
+            block.call(channel, message)
+          end
         end
       end
     end

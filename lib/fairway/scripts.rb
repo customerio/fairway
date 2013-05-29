@@ -7,29 +7,43 @@ module Fairway
       @script_shas ||= {}
     end
 
+    attr_reader :redis
+
     def initialize(redis, namespace)
-      @redis = redis
+      @redis     = redis
       @namespace = namespace
     end
 
     def register_queue(name, channel)
-      @redis.hset(registered_queues_key, name, channel)
+      redis.with do |conn|
+        conn.hset(registered_queues_key, name, channel)
+      end
     end
 
     def unregister_queue(name)
-      @redis.hdel(registered_queues_key, name)
+      redis.with do |conn|
+        conn.hdel(registered_queues_key, name)
+      end
     end
 
     def registered_queues
-      @redis.hgetall(registered_queues_key)
+      redis.with do |conn|
+        conn.hgetall(registered_queues_key)
+      end
     end
 
     def method_missing(method_name, *args)
       loaded = false
-      @redis.evalsha(script_sha(method_name), [namespace], args)
+
+      redis.with do |conn|
+        conn.evalsha(script_sha(method_name), [namespace], args)
+      end
     rescue Redis::CommandError => ex
       if ex.message.include?("NOSCRIPT") && !loaded
-        @redis.script(:load, script_source(method_name))
+        redis.with do |conn|
+          conn.script(:load, script_source(method_name))
+        end
+
         loaded = true
         retry
       else

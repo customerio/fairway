@@ -33,18 +33,28 @@ module Fairway
     end
 
     def redis
-      @redis ||= Redis::Namespace.new(@namespace, redis: raw_redis)
+      @redis ||= pool { Redis::Namespace.new(@namespace, redis: raw_redis) }
     end
 
     def scripts
-      @scripts ||= Scripts.new(raw_redis, @namespace)
+      @scripts ||= begin
+        Scripts.new(pool { raw_redis }, @namespace)
+      end
     end
 
-  private
+    private
+
+    def pool(&block)
+      pool_size    = @redis_options[:pool]    || 1
+      pool_timeout = @redis_options[:timeout] || 5
+
+      ConnectionPool.new(size: pool_size, timeout: pool_timeout) do
+        yield
+      end
+    end
 
     def raw_redis
-      @raw_redis ||= Redis.new(@redis_options.merge(hiredis: true))
+      Redis.new(@redis_options.merge(hiredis: true))
     end
-
   end
 end

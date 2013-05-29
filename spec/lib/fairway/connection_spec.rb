@@ -8,14 +8,16 @@ module Fairway
 
     describe "#initialize" do
       it "registers queues from the config" do
-        Fairway.config.register_queue("myqueue", ".*")
-        Fairway.config.redis.hgetall("registered_queues").should == {}
+        redis.with do |conn|
+          Fairway.config.register_queue("myqueue", ".*")
+          conn.hgetall("registered_queues").should == {}
 
-        Connection.new(Fairway.config)
+          Connection.new(Fairway.config)
 
-        Fairway.config.redis.hgetall("registered_queues").should == {
-          "myqueue" => ".*"
-        }
+          conn.hgetall("registered_queues").should == {
+            "myqueue" => ".*"
+          }
+        end
       end
 
       context "when an existing queue definition does not match" do
@@ -25,7 +27,9 @@ module Fairway
 
     describe "#queues" do
       it "returns a Queue for every currently registered queue" do
-        Fairway.config.redis.hset("registered_queues", "name", "channel")
+        redis.with do |conn|
+          conn.hset("registered_queues", "name", "channel")
+        end
 
         connection.queues.should == [
           Queue.new(connection, "name")
@@ -57,25 +61,36 @@ module Fairway
 
         it "adds message to the environment facet for the queue" do
           connection.deliver(message)
-          redis.llen("myqueue:1").should == 1
-          redis.lindex("myqueue:1", 0).should == message.to_json
+
+          redis.with do |conn|
+            conn.llen("myqueue:1").should == 1
+            conn.lindex("myqueue:1", 0).should == message.to_json
+          end
         end
 
         it "adds facet to list of active facets" do
           connection.deliver(message)
-          redis.smembers("myqueue:active_facets").should == ["1"]
+
+          redis.with do |conn|
+            conn.smembers("myqueue:active_facets").should == ["1"]
+          end
         end
 
         it "pushes facet onto facet queue" do
           connection.deliver(message)
-          redis.llen("myqueue:facet_queue").should == 1
-          redis.lindex("myqueue:facet_queue", 0).should == "1"
+
+          redis.with do |conn|
+            conn.llen("myqueue:facet_queue").should == 1
+            conn.lindex("myqueue:facet_queue", 0).should == "1"
+          end
         end
 
         it "doesn't push onto to facet queue if currently active" do
-          redis.sadd("myqueue:active_facets", "1")
-          connection.deliver(message)
-          redis.llen("myqueue:facet_queue").should == 0
+          redis.with do |conn|
+            conn.sadd("myqueue:active_facets", "1")
+            connection.deliver(message)
+            conn.llen("myqueue:facet_queue").should == 0
+          end
         end
       end
 
@@ -88,7 +103,11 @@ module Fairway
           connection.deliver(message)
           connection.unregister_queue("myqueue")
           connection.deliver(message)
-          redis.llen("myqueue:1").should == 1
+
+
+          redis.with do |conn|
+            conn.llen("myqueue:1").should == 1
+          end
         end
       end
     end

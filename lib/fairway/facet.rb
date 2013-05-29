@@ -10,14 +10,18 @@ module Fairway
     end
 
     def length
-      each_queue do |queue|
-        redis.llen(facet_key(queue))
-      end.sum
+      redis.with do |conn|
+        each_queue do |queue|
+          conn.llen(facet_key(queue))
+        end.sum
+      end
     end
 
     def priority
-      each_queue do |queue|
-        (redis.hget(priority_key(queue), name) || 1).to_i
+      redis.with do |conn|
+        each_queue do |queue|
+          (conn.hget(priority_key(queue), name) || 1).to_i
+        end
       end
     end
 

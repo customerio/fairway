@@ -13,7 +13,7 @@ module Fairway
         message[:topic]
       end
     end
-    let(:redis)  { config.redis }
+    let(:redis)   { config.redis }
     let(:message) { { facet: 1, topic: "event:helloworld" } }
 
     it "delegates non existant methods to parent connection" do
@@ -33,8 +33,11 @@ module Fairway
           config.register_queue("myqueue", ".*:helloworld")
           config.register_queue("yourqueue", "event:.*world")
           connection.deliver(message)
-          redis.llen("myqueue:1").should == 1
-          redis.llen("yourqueue:1").should == 1
+
+          redis.with do |conn|
+            conn.llen("myqueue:1").should == 1
+            conn.llen("yourqueue:1").should == 1
+          end
         end
       end
 
@@ -45,25 +48,36 @@ module Fairway
 
         it "adds message to the environment facet for the queue" do
           connection.deliver(message)
-          redis.llen("myqueue:1").should == 1
-          redis.lindex("myqueue:1", 0).should == message.to_json
+
+          redis.with do |conn|
+            conn.llen("myqueue:1").should == 1
+            conn.lindex("myqueue:1", 0).should == message.to_json
+          end
         end
 
         it "adds facet to list of active facets" do
           connection.deliver(message)
-          redis.smembers("myqueue:active_facets").should == ["1"]
+
+          redis.with do |conn|
+            conn.smembers("myqueue:active_facets").should == ["1"]
+          end
         end
 
         it "pushes facet onto facet queue" do
           connection.deliver(message)
-          redis.llen("myqueue:facet_queue").should == 1
-          redis.lindex("myqueue:facet_queue", 0).should == "1"
+
+          redis.with do |conn|
+            conn.llen("myqueue:facet_queue").should == 1
+            conn.lindex("myqueue:facet_queue", 0).should == "1"
+          end
         end
 
         it "doesn't push onto to facet queue if currently active" do
-          redis.sadd("myqueue:active_facets", "1")
-          connection.deliver(message)
-          redis.llen("myqueue:facet_queue").should == 0
+          redis.with do |conn|
+            conn.sadd("myqueue:active_facets", "1")
+            connection.deliver(message)
+            conn.llen("myqueue:facet_queue").should == 0
+          end
         end
       end
 
@@ -74,12 +88,18 @@ module Fairway
 
         it "doesn't add message to the queue" do
           connection.deliver(message)
-          redis.llen("myqueue:1").should == 0
+
+          redis.with do |conn|
+            conn.llen("myqueue:1").should == 0
+          end
         end
 
         it "doesn't add facet to list of active facets" do
           connection.deliver(message)
-          redis.smembers("myqueue:active_facets").should == []
+          
+          redis.with do |conn|
+            conn.smembers("myqueue:active_facets").should == []
+          end
         end
       end
     end

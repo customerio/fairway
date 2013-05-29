@@ -23,10 +23,25 @@ module Fairway
       end
     end
 
-    it "allows setting of redis connection options" do
+    it "allows redis config" do
       Config.new do |config|
         config.redis = { host: "127.0.0.1", port: 6379 }
       end
+    end
+
+    it "allows setting of connection pooling" do
+      config = Config.new do |config|
+        config.redis = { pool: 10 }
+      end
+
+      config.redis.instance_variable_get("@size").should == 10
+    end
+
+    it "defaults to pool of 1" do
+      config = Config.new do |config|
+      end
+
+      config.redis.instance_variable_get("@size").should == 1
     end
 
     it "allows setting of redis namespace" do
