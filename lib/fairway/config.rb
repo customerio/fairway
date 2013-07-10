@@ -1,7 +1,7 @@
 module Fairway
   class Config
     attr_accessor :namespace
-    attr_reader :defined_queues
+    attr_reader :defined_queues, :redis_options
 
     DEFAULT_FACET = "default"
 
