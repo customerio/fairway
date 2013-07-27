@@ -18,8 +18,8 @@ func QueueSpec(c gospec.Context) {
 
 	c.Specify("Pull", func() {
 		c.Specify("pulls a message off the queue using FIFO", func() {
-			msg1 := NewMsg(map[string]string{"name": "mymessage1"})
-			msg2 := NewMsg(map[string]string{"name": "mymessage2"})
+			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]string{"name": "mymessage2"})
 
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
@@ -39,9 +39,9 @@ func QueueSpec(c gospec.Context) {
 				return str
 			}
 
-			msg1 := NewMsg(map[string]string{"facet": "1", "name": "mymessage1"})
-			msg2 := NewMsg(map[string]string{"facet": "1", "name": "mymessage2"})
-			msg3 := NewMsg(map[string]string{"facet": "2", "name": "mymessage3"})
+			msg1, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage2"})
+			msg3, _ := NewMsg(map[string]string{"facet": "2", "name": "mymessage3"})
 
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
@@ -59,7 +59,8 @@ func QueueSpec(c gospec.Context) {
 			r := config.redisPool.Get()
 			defer r.Close()
 
-			conn.Deliver(NewMsg(map[string]string{}))
+			msg, _ := NewMsg(map[string]string{})
+			conn.Deliver(msg)
 
 			count, _ := redis.Int(r.Do("scard", "fairway:myqueue:active_facets"))
 			c.Expect(count, Equals, 1)
@@ -71,7 +72,8 @@ func QueueSpec(c gospec.Context) {
 		})
 
 		c.Specify("returns nil if there are no messages to receive", func() {
-			conn.Deliver(NewMsg(map[string]string{}))
+			msg, _ := NewMsg(map[string]string{})
+			conn.Deliver(msg)
 
 			queueName, message := queue.Pull()
 			c.Expect(queueName, Equals, "myqueue")

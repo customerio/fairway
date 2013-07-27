@@ -1,5 +1,7 @@
 source :rubygems
 
+gem "rake"
+
 # Specify your gem's dependencies in fairway.gemspec
 gemspec
 

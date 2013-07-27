@@ -3,7 +3,6 @@ package fairway
 import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
-	"io/ioutil"
 )
 
 type scripts struct {
@@ -33,32 +32,35 @@ func (s *scripts) registerQueue(queue *QueueDefinition) {
 	conn := s.config.redisPool.Get()
 	defer conn.Close()
 
-	conn.Do("hset", s.registeredQueuesKey(), queue.name, queue.channel)
+	_, err := redis.Bool(conn.Do("hset", s.registeredQueuesKey(), queue.name, queue.channel))
+
+	if err != nil {
+		panic(err)
+	}
 }
 
-func (s *scripts) registeredQueues() []string {
+func (s *scripts) registeredQueues() ([]string, error) {
+	conn := s.config.redisPool.Get()
+	defer conn.Close()
+	return redis.Strings(conn.Do("hkeys", s.registeredQueuesKey()))
+}
+
+func (s *scripts) deliver(channel, facet string, msg *Msg) error {
 	conn := s.config.redisPool.Get()
 	defer conn.Close()
 
-	result, _ := redis.Strings(conn.Do("hkeys", s.registeredQueuesKey()))
+	script := s.findScript(FairwayDeliver, 1)
 
-	return result
-}
+	_, err := script.Do(conn, s.namespace(), channel, facet, msg.json())
 
-func (s *scripts) deliver(channel, facet string, msg *Msg) {
-	conn := s.config.redisPool.Get()
-	defer conn.Close()
-
-	script := s.findScript("fairway_deliver", 1)
-
-	script.Do(conn, s.namespace(), channel, facet, msg.json())
+	return err
 }
 
 func (s *scripts) pull(queueName string) (string, *Msg) {
 	conn := s.config.redisPool.Get()
 	defer conn.Close()
 
-	script := s.findScript("fairway_pull", 1)
+	script := s.findScript(FairwayPull, 1)
 
 	result, err := redis.Strings(script.Do(conn, s.namespace(), queueName))
 
@@ -67,16 +69,17 @@ func (s *scripts) pull(queueName string) (string, *Msg) {
 	}
 
 	queue := result[0]
-	message := NewMsgFromString(result[1])
+	message, _ := NewMsgFromString(result[1])
 
 	return queue, message
 }
 
-func (s *scripts) findScript(name string, keyCount int) *redis.Script {
-	if s.data[name] == nil {
-		script, _ := ioutil.ReadFile(fmt.Sprint("../redis/", name, ".lua"))
-		s.data[name] = redis.NewScript(keyCount, string(script))
+func (s *scripts) findScript(script func() string, keyCount int) *redis.Script {
+	content := script()
+
+	if s.data[content] == nil {
+		s.data[content] = redis.NewScript(keyCount, content)
 	}
 
-	return s.data[name]
+	return s.data[content]
 }

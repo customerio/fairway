@@ -15,7 +15,8 @@ func ConfigSpec(c gospec.Context) {
 		})
 
 		c.Specify("sets the facet to always return 'default'", func() {
-			c.Expect(config.Facet(NewMsg(make([]string, 0))), Equals, "default")
+			msg, _ := NewMsg(make([]string, 0))
+			c.Expect(config.Facet(msg), Equals, "default")
 		})
 
 		c.Specify("doesn't have any defined queues", func() {
@@ -40,7 +41,8 @@ func ConfigSpec(c gospec.Context) {
 		config.Facet = func(message *Msg) string {
 			return "myfacet"
 		}
-		c.Expect(config.Facet(NewMsg(make([]string, 0))), Equals, "myfacet")
+		msg, _ := NewMsg(make([]string, 0))
+		c.Expect(config.Facet(msg), Equals, "myfacet")
 	})
 
 	c.Specify("can define a queue", func() {

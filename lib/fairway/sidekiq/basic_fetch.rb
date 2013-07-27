@@ -14,7 +14,6 @@ module Fairway
 
         work = ::Sidekiq.redis do |conn|
           script = <<-SCRIPT
-            -- take advantage of non-blocking scripts
             for i = 1, #KEYS do
               local work = redis.call('rpop', KEYS[i]);
 

@@ -4,7 +4,7 @@ type Connection interface {
 	RegisterQueues()
 	Queues() []*Queue
 	Channel(*Msg) string
-	Deliver(*Msg)
+	Deliver(*Msg) error
 	Configuration() *Config
 }
 
@@ -20,10 +20,10 @@ func (c *conn) RegisterQueues() {
 }
 
 func (c *conn) Queues() []*Queue {
-	registered := c.scripts.registeredQueues()
+	registered, _ := c.scripts.registeredQueues()
 	queues := make([]*Queue, len(registered))
 
-	for i, queue := range c.scripts.registeredQueues() {
+	for i, queue := range registered {
 		queues[i] = NewQueue(c, queue)
 	}
 
@@ -34,10 +34,10 @@ func (c *conn) Channel(msg *Msg) string {
 	return "default"
 }
 
-func (c *conn) Deliver(msg *Msg) {
+func (c *conn) Deliver(msg *Msg) error {
 	channel := c.Channel(msg)
 	facet := c.config.Facet(msg)
-	c.scripts.deliver(channel, facet, msg)
+	return c.scripts.deliver(channel, facet, msg)
 }
 
 func (c *conn) Configuration() *Config {

@@ -26,6 +26,7 @@ func TestAllSpecs(t *testing.T) {
 	// List all specs here
 	r.AddSpec(ConfigSpec)
 	r.AddSpec(ConnectionSpec)
+	r.AddSpec(MsgSpec)
 	r.AddSpec(QueueSpec)
 
 	// Run GoSpec and report any errors to gotest's `testing.T` instance

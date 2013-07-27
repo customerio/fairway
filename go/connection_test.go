@@ -48,7 +48,7 @@ func ConnectionSpec(c gospec.Context) {
 			count, _ := redis.Int(r.Do("llen", "fairway:myqueue:default"))
 			c.Expect(count, Equals, 0)
 
-			msg := NewMsg(map[string]string{"name": "mymessage"})
+			msg, _ := NewMsg(map[string]string{"name": "mymessage"})
 
 			conn.Deliver(msg)
 
@@ -66,7 +66,7 @@ func ConnectionSpec(c gospec.Context) {
 			facets, _ := redis.Strings(r.Do("smembers", "fairway:myqueue:active_facets"))
 			c.Expect(len(facets), Equals, 0)
 
-			msg := NewMsg(map[string]string{})
+			msg, _ := NewMsg(map[string]string{})
 
 			conn.Deliver(msg)
 
@@ -82,7 +82,7 @@ func ConnectionSpec(c gospec.Context) {
 			count, _ := redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
 			c.Expect(count, Equals, 0)
 
-			msg := NewMsg(map[string]string{})
+			msg, _ := NewMsg(map[string]string{})
 
 			conn.Deliver(msg)
 
@@ -99,12 +99,27 @@ func ConnectionSpec(c gospec.Context) {
 
 			r.Do("sadd", "fairway:myqueue:active_facets", "default")
 
-			msg := NewMsg(map[string]string{})
+			msg, _ := NewMsg(map[string]string{})
 
 			conn.Deliver(msg)
 
 			count, _ := redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
 			c.Expect(count, Equals, 0)
+		})
+
+		c.Specify("returns nil if delivery succeeds", func() {
+			msg, _ := NewMsg(map[string]string{})
+			err := conn.Deliver(msg)
+			c.Expect(err, IsNil)
+		})
+
+		c.Specify("returns error if delivery fails", func() {
+			config := NewConfig("localhost:9999", 2)
+			conn := NewConnection(config)
+
+			msg, _ := NewMsg(map[string]string{})
+			err := conn.Deliver(msg)
+			c.Expect(err.Error(), Equals, "dial tcp 127.0.0.1:9999: connection refused")
 		})
 	})
 }
