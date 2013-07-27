@@ -26,6 +26,7 @@ func TestAllSpecs(t *testing.T) {
 	// List all specs here
 	r.AddSpec(ConfigSpec)
 	r.AddSpec(ConnectionSpec)
+	r.AddSpec(ChanneledConnectionSpec)
 	r.AddSpec(MsgSpec)
 	r.AddSpec(QueueSpec)
 

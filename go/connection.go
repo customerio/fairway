@@ -45,10 +45,10 @@ func (c *conn) Configuration() *Config {
 }
 
 func NewConnection(config *Config) Connection {
-	c := conn{
+	c := &conn{
 		config,
 		config.scripts(),
 	}
 	c.RegisterQueues()
-	return &c
+	return c
 }
