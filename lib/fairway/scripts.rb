@@ -15,14 +15,18 @@ module Fairway
     end
 
     def register_queue(name, channel)
-      redis.with do |conn|
-        conn.hset(registered_queues_key, name, channel)
+      redis.pools.each do |pool|
+        pool.with do |conn|
+          conn.hset(registered_queues_key, name, channel)
+        end
       end
     end
 
     def unregister_queue(name)
-      redis.with do |conn|
-        conn.hdel(registered_queues_key, name)
+      redis.pools.each do |pool|
+        pool.with do |conn|
+          conn.hdel(registered_queues_key, name)
+        end
       end
     end
 
@@ -35,12 +39,22 @@ module Fairway
     def method_missing(method_name, *args)
       loaded = false
 
-      redis.with do |conn|
-        conn.evalsha(script_sha(method_name), [namespace], args)
+      if multi?(method_name)
+        each_pool do |conn|
+          conn.evalsha(script_sha(method_name), [namespace], args)
+        end
+      elsif first?(method_name)
+        first_pool do |conn|
+          conn.evalsha(script_sha(method_name), [namespace], args)
+        end
+      else
+        redis.with do |conn|
+          conn.evalsha(script_sha(method_name), [namespace], args)
+        end
       end
     rescue Redis::CommandError => ex
       if ex.message.include?("NOSCRIPT") && !loaded
-        redis.with do |conn|
+        each_pool do |conn|
           conn.script(:load, script_source(method_name))
         end
 
@@ -52,6 +66,33 @@ module Fairway
     end
 
   private
+
+    def first?(script)
+      ["fairway_pull", "fairway_peek"].include?(script.to_s)
+    end
+
+    def multi?(script)
+      ["fairway_priority", "fairway_destroy"].include?(script.to_s)
+    end
+
+    def each_pool(&block)
+      redis.pools.each do |pool|
+        pool.with do |conn|
+          yield(conn)
+        end
+      end
+    end
+
+    def first_pool(&block)
+      redis.pools.each do |pool|
+        pool.with do |conn|
+          val = yield(conn)
+          return val if val
+        end
+      end
+
+      nil
+    end
 
     def registered_queues_key
       "#{namespace}registered_queues"

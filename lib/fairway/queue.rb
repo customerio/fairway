@@ -8,21 +8,27 @@ module Fairway
     end
 
     def active_facets
-      redis.with do |conn|
-        facet_names = unique_queues.map do |queue|
-          conn.smembers("#{queue}:active_facets")
-        end.flatten.uniq
-      
-        facet_names.map do |name|
-          Facet.new(self, name)
+      facet_names = []
+
+      redis.pools.each do |pool|
+        pool.with do |conn|
+          facet_names += unique_queues.map do |queue|
+            conn.smembers("#{queue}:active_facets")
+          end.flatten
         end
+      end
+
+      facet_names.uniq.map do |name|
+        Facet.new(self, name)
       end
     end
 
     def length
-      redis.with do |conn|
-        conn.mget(unique_queues.map{|q| "#{q}:length" }).map(&:to_i).sum
-      end
+      redis.pools.map do |pool|
+        pool.with do |conn|
+          conn.mget(unique_queues.map{|q| "#{q}:length" }).map(&:to_i).sum
+        end
+      end.sum
     end
 
     def peek
