@@ -15,18 +15,14 @@ module Fairway
     end
 
     def register_queue(name, channel)
-      redis.pools.each do |pool|
-        pool.with do |conn|
-          conn.hset(registered_queues_key, name, channel)
-        end
+      redis.with_each do |conn|
+        conn.hset(registered_queues_key, name, channel)
       end
     end
 
     def unregister_queue(name)
-      redis.pools.each do |pool|
-        pool.with do |conn|
-          conn.hdel(registered_queues_key, name)
-        end
+      redis.with_each do |conn|
+        conn.hdel(registered_queues_key, name)
       end
     end
 
@@ -40,7 +36,7 @@ module Fairway
       loaded = false
 
       if multi?(method_name)
-        each_pool do |conn|
+        redis.with_each do |conn|
           conn.evalsha(script_sha(method_name), [namespace], args)
         end
       elsif first?(method_name)
@@ -54,7 +50,7 @@ module Fairway
       end
     rescue Redis::CommandError => ex
       if ex.message.include?("NOSCRIPT") && !loaded
-        each_pool do |conn|
+        redis.with_each do |conn|
           conn.script(:load, script_source(method_name))
         end
 
@@ -73,14 +69,6 @@ module Fairway
 
     def multi?(script)
       ["fairway_priority", "fairway_destroy"].include?(script.to_s)
-    end
-
-    def each_pool(&block)
-      redis.pools.each do |pool|
-        pool.with do |conn|
-          yield(conn)
-        end
-      end
     end
 
     def first_pool(&block)

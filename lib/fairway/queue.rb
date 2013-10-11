@@ -10,12 +10,10 @@ module Fairway
     def active_facets
       facet_names = []
 
-      redis.pools.each do |pool|
-        pool.with do |conn|
-          facet_names += unique_queues.map do |queue|
-            conn.smembers("#{queue}:active_facets")
-          end.flatten
-        end
+      redis.with_each do |conn|
+        facet_names += unique_queues.map do |queue|
+          conn.smembers("#{queue}:active_facets")
+        end.flatten
       end
 
       facet_names.uniq.map do |name|

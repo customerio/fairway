@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    fairway (0.1.4)
+    fairway (0.2.1)
       activesupport
       redis
       redis-namespace (>= 1.3.0)

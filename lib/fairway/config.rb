@@ -1,5 +1,13 @@
 module Fairway
-  class RandomPool
+  class RandomDistribution
+    class CannotConnect < RuntimeError; end
+
+    EXCEPTIONS = [
+      Redis::CannotConnectError,
+      Errno::ETIMEDOUT,
+      Errno::EHOSTUNREACH
+    ]
+
     attr_reader :pools
 
     def initialize(pools)
@@ -7,15 +15,37 @@ module Fairway
     end
 
     def with(&block)
-      @pools.sample.with do |conn|
-        yield(conn)
+      valid_pools = @pools
+
+      while valid_pools.any?
+        pool = valid_pools.sample
+
+        pool.with do |conn|
+          begin
+            return yield(conn)
+          rescue *EXCEPTIONS
+            valid_pools -= [pool]
+          end
+        end
+      end
+
+      raise CannotConnect.new
+    end
+
+    def with_each(&block)
+      @pools.each do |pool|
+        pool.with do |conn|
+          begin
+            yield(conn)
+          end
+        end
       end
     end
   end
 
   class Config
     attr_accessor :namespace
-    attr_reader :defined_queues, :redis_options
+    attr_reader :defined_queues, :redis_options, :distribute
 
     DEFAULT_FACET = "default"
 
@@ -24,6 +54,7 @@ module Fairway
     def initialize
       @redis_options  = []
       @namespace      = nil
+      @distribute     = RandomDistribution
       @facet          = lambda { |message| DEFAULT_FACET }
       @defined_queues = []
 
@@ -65,7 +96,7 @@ module Fairway
           pool(options) { Redis::Namespace.new(@namespace, redis: raw_redis(options)) }
         end
 
-        RandomPool.new(pools)
+        @distribute.new(pools)
       end
     end
 
@@ -76,7 +107,7 @@ module Fairway
           pool(options) { raw_redis(options) }
         end
 
-        RandomPool.new(pools)
+        @distribute.new(pools)
       end
     end
 
