@@ -72,11 +72,9 @@ module Fairway
     end
 
     def first_pool(&block)
-      redis.pools.each do |pool|
-        pool.with do |conn|
-          val = yield(conn)
-          return val if val
-        end
+      redis.with_each do |conn|
+        val = yield(conn)
+        return val if val
       end
 
       nil
