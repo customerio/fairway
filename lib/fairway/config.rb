@@ -33,7 +33,7 @@ module Fairway
     end
 
     def with_each(&block)
-      @pools.each do |pool|
+      @pools.shuffle.each do |pool|
         pool.with do |conn|
           begin
             yield(conn)
