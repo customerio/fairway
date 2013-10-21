@@ -42,6 +42,12 @@ module Fairway
 
         ::Sidekiq.logger.debug "#{self.class.name}#retrieve_work"
 
+        if ::Sidekiq.redis{ |conn| conn.ping } != "PONG"
+          # Couldn't properly connect to main sidekiq redis.
+          # Don't process any additional jobs until resolved.
+          return nil
+        end
+
         fetch_order.each do |fetch|
           work = fetch.retrieve_work(blocking: false)
 
