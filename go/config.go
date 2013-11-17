@@ -25,7 +25,7 @@ func (c *Config) scripts() *scripts {
 	return newScripts(c)
 }
 
-func NewConfig(server string, poolSize int) *Config {
+func NewConfig(server string, db string, poolSize int) *Config {
 	return &Config{
 		"fairway",
 		func(message *Msg) string { return "default" },
@@ -39,6 +39,9 @@ func NewConfig(server string, poolSize int) *Config {
 				if err != nil {
 					return nil, err
 				}
+
+				c.Do("select", db)
+
 				return c, err
 			},
 			TestOnBorrow: func(c redis.Conn, t time.Time) error {

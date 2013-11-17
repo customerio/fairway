@@ -7,8 +7,7 @@ import (
 )
 
 func QueueSpec(c gospec.Context) {
-	// Load test instance of redis on port 6400
-	config := NewConfig("localhost:6400", 2)
+	config := NewConfig("localhost:6379", "15", 2)
 	config.AddQueue("myqueue", ".*")
 	conn := NewConnection(config)
 	queue := NewQueue(conn, "myqueue")

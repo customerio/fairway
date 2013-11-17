@@ -6,8 +6,7 @@ import (
 )
 
 func ConfigSpec(c gospec.Context) {
-	// Load test instance of redis on port 6400
-	config := NewConfig("localhost:6400", 10)
+	config := NewConfig("localhost:6379", "15", 10)
 
 	c.Specify("NewConfig", func() {
 		c.Specify("namespace is fairway", func() {
@@ -27,7 +26,7 @@ func ConfigSpec(c gospec.Context) {
 	c.Specify("sets redis pool size", func() {
 		c.Expect(config.redisPool.MaxIdle, Equals, 10)
 		c.Expect(config.redisPool.MaxActive, Equals, 10)
-		config = NewConfig("localhost:6400", 20)
+		config = NewConfig("localhost:6379", "15", 20)
 		c.Expect(config.redisPool.MaxIdle, Equals, 20)
 		c.Expect(config.redisPool.MaxActive, Equals, 20)
 	})

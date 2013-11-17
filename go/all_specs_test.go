@@ -18,8 +18,8 @@ func TestAllSpecs(t *testing.T) {
 	r.Parallel = false
 
 	r.BeforeEach = func() {
-		// Load test instance of redis on port 6400
-		conn, _ := redis.Dial("tcp", "localhost:6400")
+		conn, _ := redis.Dial("tcp", "localhost:6379")
+		conn.Do("select", 15)
 		conn.Do("flushdb")
 	}
 

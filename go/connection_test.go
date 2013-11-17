@@ -7,8 +7,7 @@ import (
 )
 
 func ConnectionSpec(c gospec.Context) {
-	// Load test instance of redis on port 6400
-	config := NewConfig("localhost:6400", 2)
+	config := NewConfig("localhost:6379", "15", 2)
 	config.AddQueue("myqueue", ".*")
 	conn := NewConnection(config)
 
@@ -114,7 +113,7 @@ func ConnectionSpec(c gospec.Context) {
 		})
 
 		c.Specify("returns error if delivery fails", func() {
-			config := NewConfig("localhost:9999", 2)
+			config := NewConfig("localhost:9999", "15", 2)
 			conn := NewConnection(config)
 
 			msg, _ := NewMsg(map[string]string{})
