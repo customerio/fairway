@@ -2,7 +2,7 @@ package fairway
 
 import (
 	"github.com/customerio/gospec"
-	"github.com/garyburd/redigo/redis"
+	"github.com/customerio/redigo/redis"
 	"testing"
 )
 

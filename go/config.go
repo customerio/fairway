@@ -1,7 +1,7 @@
 package fairway
 
 import (
-	"github.com/garyburd/redigo/redis"
+	"github.com/customerio/redigo/redis"
 	"time"
 )
 

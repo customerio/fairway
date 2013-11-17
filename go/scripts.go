@@ -2,7 +2,7 @@ package fairway
 
 import (
 	"fmt"
-	"github.com/garyburd/redigo/redis"
+	"github.com/customerio/redigo/redis"
 )
 
 type scripts struct {
