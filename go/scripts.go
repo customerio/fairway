@@ -29,7 +29,7 @@ func (s *scripts) registeredQueuesKey() string {
 }
 
 func (s *scripts) registerQueue(queue *QueueDefinition) {
-	conn := s.config.redisPool.Get()
+	conn := s.config.Pool.Get()
 	defer conn.Close()
 
 	_, err := redis.Bool(conn.Do("hset", s.registeredQueuesKey(), queue.name, queue.channel))
@@ -40,13 +40,13 @@ func (s *scripts) registerQueue(queue *QueueDefinition) {
 }
 
 func (s *scripts) registeredQueues() ([]string, error) {
-	conn := s.config.redisPool.Get()
+	conn := s.config.Pool.Get()
 	defer conn.Close()
 	return redis.Strings(conn.Do("hkeys", s.registeredQueuesKey()))
 }
 
 func (s *scripts) deliver(channel, facet string, msg *Msg) error {
-	conn := s.config.redisPool.Get()
+	conn := s.config.Pool.Get()
 	defer conn.Close()
 
 	script := s.findScript(FairwayDeliver, 1)
@@ -57,7 +57,7 @@ func (s *scripts) deliver(channel, facet string, msg *Msg) error {
 }
 
 func (s *scripts) pull(queueName string) (string, *Msg) {
-	conn := s.config.redisPool.Get()
+	conn := s.config.Pool.Get()
 	defer conn.Close()
 
 	script := s.findScript(FairwayPull, 1)

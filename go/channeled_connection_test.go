@@ -19,7 +19,7 @@ func ChanneledConnectionSpec(c gospec.Context) {
 
 	c.Specify("Deliver", func() {
 		c.Specify("only queues up message for matching queues", func() {
-			r := config.redisPool.Get()
+			r := config.Pool.Get()
 			defer r.Close()
 
 			count, _ := redis.Int(r.Do("llen", "fairway:myqueue:default"))

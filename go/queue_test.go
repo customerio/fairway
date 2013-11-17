@@ -55,7 +55,7 @@ func QueueSpec(c gospec.Context) {
 		})
 
 		c.Specify("removes facet from active list if it becomes empty", func() {
-			r := config.redisPool.Get()
+			r := config.Pool.Get()
 			defer r.Close()
 
 			msg, _ := NewMsg(map[string]string{})

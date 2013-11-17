@@ -14,7 +14,7 @@ type Config struct {
 	Namespace string
 	Facet     func(message *Msg) string
 	queues    []*QueueDefinition
-	redisPool *redis.Pool
+	Pool      *redis.Pool
 }
 
 func (c *Config) AddQueue(name, channel string) {

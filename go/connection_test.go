@@ -20,7 +20,7 @@ func ConnectionSpec(c gospec.Context) {
 		})
 
 		c.Specify("stores registered queues in redis", func() {
-			r := config.redisPool.Get()
+			r := config.Pool.Get()
 			defer r.Close()
 
 			values, _ := redis.Strings(r.Do("hgetall", "fairway:registered_queues"))
@@ -41,7 +41,7 @@ func ConnectionSpec(c gospec.Context) {
 
 	c.Specify("Deliver", func() {
 		c.Specify("adds message to the facet for the queue", func() {
-			r := config.redisPool.Get()
+			r := config.Pool.Get()
 			defer r.Close()
 
 			count, _ := redis.Int(r.Do("llen", "fairway:myqueue:default"))
@@ -59,7 +59,7 @@ func ConnectionSpec(c gospec.Context) {
 		})
 
 		c.Specify("adds facets to the list of active facets", func() {
-			r := config.redisPool.Get()
+			r := config.Pool.Get()
 			defer r.Close()
 
 			facets, _ := redis.Strings(r.Do("smembers", "fairway:myqueue:active_facets"))
@@ -75,7 +75,7 @@ func ConnectionSpec(c gospec.Context) {
 		})
 
 		c.Specify("pushes facet onto the facet queue", func() {
-			r := config.redisPool.Get()
+			r := config.Pool.Get()
 			defer r.Close()
 
 			count, _ := redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
@@ -93,7 +93,7 @@ func ConnectionSpec(c gospec.Context) {
 		})
 
 		c.Specify("doesn't push facet if already active", func() {
-			r := config.redisPool.Get()
+			r := config.Pool.Get()
 			defer r.Close()
 
 			r.Do("sadd", "fairway:myqueue:active_facets", "default")
