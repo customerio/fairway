@@ -134,6 +134,12 @@ end
 Now, messages from the channels `invite_friends`, `invite_pets`, `invite_parents` will
 be delivered to the `invite_queue`.
 
+```ruby
+conn.deliver(type: "invite_friends", user: "bob", friends: ["nancy", "john"])
+conn.deliver(type: "invite_family", user: "bob", friends: ["mom", "pop"])
+conn.deliver(type: "send_invitation", user: "bob", recipients: ["nancy@example.com", "john@example.com"])
+```
+
 ## Subscribing to messages
 
 To listen for messages without the overhead of queuing them, you can subscribe:
