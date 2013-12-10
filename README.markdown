@@ -131,7 +131,7 @@ If you'd like to receive messages with channels that match a pattern:
 
 ```ruby
 Fairway.configure do |config|
-  config.register_queue("invite_queue", "invite_.*")
+  config.register_queue("all_invites", "invite_.*")
 end
 ```
 
