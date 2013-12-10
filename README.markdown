@@ -77,8 +77,8 @@ To add messages to your queues, you deliver them:
 ```ruby
 connection = Fairway::Connection.new
 connection.deliver(type: "invite_friends",
-                   user: "bob",
-                   friends: ["nancy", "john"])
+  user: "bob",
+  friends: ["nancy", "john"])
 ```
 
 Now, any registered queues will receive this message, faceted if you've defined
@@ -138,14 +138,14 @@ be delivered to the `invite_queue`.
 
 ```ruby
 conn.deliver(type: "invite_friends",
-             user: "bob",
-             friends: ["nancy", "john"])
+  user: "bob",
+  friends: ["nancy", "john"])
 conn.deliver(type: "invite_family",
-             user: "bob",
-             family: ["mom", "pop"])
+  user: "bob",
+  family: ["mom", "pop"])
 conn.deliver(type: "send_invitation",
-             user: "bob",
-             recipients: ["nancy@example.com", "john@example.com"])
+  user: "bob",
+  recipients: ["nancy@example.com", "john@example.com"])
 ```
 
 ## Subscribing to messages
