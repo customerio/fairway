@@ -6,7 +6,7 @@ gem "rake"
 gemspec
 
 group :test do
-  gem "debugger"
+  #gem "debugger"
   gem "sidekiq"
   gem "rspec"
 end
