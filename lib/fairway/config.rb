@@ -1,15 +1,60 @@
 module Fairway
+  class RandomDistribution
+    class CannotConnect < RuntimeError; end
+
+    EXCEPTIONS = [
+      Redis::CannotConnectError,
+      Errno::ETIMEDOUT,
+      Errno::EHOSTUNREACH
+    ]
+
+    attr_reader :pools
+
+    def initialize(pools)
+      @pools = pools
+    end
+
+    def with(&block)
+      valid_pools = @pools
+
+      while valid_pools.any?
+        pool = valid_pools.sample
+
+        pool.with do |conn|
+          begin
+            return yield(conn)
+          rescue *EXCEPTIONS
+            valid_pools -= [pool]
+          end
+        end
+      end
+
+      raise CannotConnect.new
+    end
+
+    def with_each(&block)
+      @pools.shuffle.each do |pool|
+        pool.with do |conn|
+          begin
+            yield(conn)
+          end
+        end
+      end
+    end
+  end
+
   class Config
     attr_accessor :namespace
-    attr_reader :defined_queues, :redis_options
+    attr_reader :defined_queues, :redis_options, :distribute
 
     DEFAULT_FACET = "default"
 
     QueueDefinition = Struct.new(:name, :channel)
 
     def initialize
-      @redis_options  = {}
+      @redis_options  = []
       @namespace      = nil
+      @distribute     = RandomDistribution
       @facet          = lambda { |message| DEFAULT_FACET }
       @defined_queues = []
 
@@ -29,32 +74,54 @@ module Fairway
     end
 
     def redis=(options)
-      @redis_options = options
+      @redis_options = [options].flatten
     end
 
     def redis
-      @redis ||= pool { Redis::Namespace.new(@namespace, redis: raw_redis) }
+      @redis ||= redises
     end
 
     def scripts
       @scripts ||= begin
-        Scripts.new(pool { raw_redis }, @namespace)
+        Scripts.new(raw_redises, @namespace)
       end
     end
 
     private
 
-    def pool(&block)
-      pool_size    = @redis_options[:pool]    || 1
-      pool_timeout = @redis_options[:timeout] || 5
+    def redises
+      @redises ||= begin
+        @redis_options << {} if @redis_options.empty?
+        pools = @redis_options.map do |options|
+          pool(options) { Redis::Namespace.new(@namespace, redis: raw_redis(options)) }
+        end
+
+        @distribute.new(pools)
+      end
+    end
+
+    def raw_redises
+      @raw_redises ||= begin
+        @redis_options << {} if @redis_options.empty?
+        pools = @redis_options.map do |options|
+          pool(options) { raw_redis(options) }
+        end
+
+        @distribute.new(pools)
+      end
+    end
+
+    def pool(options, &block)
+      pool_size    = options[:pool]    || 1
+      pool_timeout = options[:timeout] || 5
 
       ConnectionPool.new(size: pool_size, timeout: pool_timeout) do
         yield
       end
     end
 
-    def raw_redis
-      Redis.new(@redis_options)
+    def raw_redis(options)
+      Redis.new(options)
     end
   end
 end
