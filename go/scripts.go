@@ -56,13 +56,13 @@ func (s *scripts) deliver(channel, facet string, msg *Msg) error {
 	return err
 }
 
-func (s *scripts) pull(queueName string) (string, *Msg) {
+func (s *scripts) pull(queueName string, timestamp int) (string, *Msg) {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
 
-	script := s.findScript(FairwayPull, 1)
+	script := s.findScript(FairwayPull, 2)
 
-	result, err := redis.Strings(script.Do(conn, s.namespace(), queueName))
+	result, err := redis.Strings(script.Do(conn, s.namespace(), timestamp, queueName))
 
 	if err != nil {
 		return "", nil
@@ -72,6 +72,32 @@ func (s *scripts) pull(queueName string) (string, *Msg) {
 	message, _ := NewMsgFromString(result[1])
 
 	return queue, message
+}
+
+func (s *scripts) inflight(queueName string) []string {
+	conn := s.config.Pool.Get()
+	defer conn.Close()
+
+	script := s.findScript(FairwayInflight, 1)
+
+	result, err := redis.Strings(script.Do(conn, s.namespace(), queueName))
+
+	if err != nil {
+		return []string{}
+	}
+
+	return result
+}
+
+func (s *scripts) ack(queueName string, message *Msg) error {
+	conn := s.config.Pool.Get()
+	defer conn.Close()
+
+	script := s.findScript(FairwayAck, 1)
+
+	_, err := redis.Strings(script.Do(conn, s.namespace(), queueName, message.json()))
+
+	return err
 }
 
 func (s *scripts) findScript(script func() string, keyCount int) *redis.Script {

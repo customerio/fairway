@@ -4,6 +4,8 @@ import (
 	"github.com/customerio/gospec"
 	. "github.com/customerio/gospec"
 	"github.com/customerio/redigo/redis"
+
+	"time"
 )
 
 func QueueSpec(c gospec.Context) {
@@ -23,11 +25,50 @@ func QueueSpec(c gospec.Context) {
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
 
-			queueName, message := queue.Pull()
+			queueName, message := queue.Pull(time.Now())
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg1.json())
 
-			queueName, message = queue.Pull()
+			queueName, message = queue.Pull(time.Now())
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(message.json(), Equals, msg2.json())
+		})
+
+		c.Specify("places pulled message on inflight sorted set until acknowledged", func() {
+			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
+
+			conn.Deliver(msg1)
+
+			c.Expect(len(queue.Inflight()), Equals, 0)
+
+			queueName, message := queue.Pull(time.Now())
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(message.json(), Equals, msg1.json())
+
+			c.Expect(len(queue.Inflight()), Equals, 1)
+			c.Expect(queue.Inflight()[0], Equals, msg1.json())
+
+			queue.Ack(msg1)
+
+			c.Expect(len(queue.Inflight()), Equals, 0)
+		})
+
+		c.Specify("pulls from inflight message set if messages are unacknowledged", func() {
+			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]string{"name": "mymessage2"})
+
+			conn.Deliver(msg1)
+			conn.Deliver(msg2)
+
+			queueName, message := queue.Pull(time.Now().Add(-10 * time.Minute))
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(message.json(), Equals, msg1.json())
+
+			queueName, message = queue.Pull(time.Now())
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(message.json(), Equals, msg1.json())
+
+			queueName, message = queue.Pull(time.Now())
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg2.json())
 		})
@@ -46,11 +87,11 @@ func QueueSpec(c gospec.Context) {
 			conn.Deliver(msg2)
 			conn.Deliver(msg3)
 
-			_, message := queue.Pull()
+			_, message := queue.Pull(time.Now())
 			c.Expect(message.json(), Equals, msg1.json())
-			_, message = queue.Pull()
+			_, message = queue.Pull(time.Now())
 			c.Expect(message.json(), Equals, msg3.json())
-			_, message = queue.Pull()
+			_, message = queue.Pull(time.Now())
 			c.Expect(message.json(), Equals, msg2.json())
 		})
 
@@ -64,7 +105,7 @@ func QueueSpec(c gospec.Context) {
 			count, _ := redis.Int(r.Do("scard", "fairway:myqueue:active_facets"))
 			c.Expect(count, Equals, 1)
 
-			queue.Pull()
+			queue.Pull(time.Now())
 
 			count, _ = redis.Int(r.Do("scard", "fairway:myqueue:active_facets"))
 			c.Expect(count, Equals, 0)
@@ -74,9 +115,9 @@ func QueueSpec(c gospec.Context) {
 			msg, _ := NewMsg(map[string]string{})
 			conn.Deliver(msg)
 
-			queueName, message := queue.Pull()
+			queueName, message := queue.Pull(time.Now())
 			c.Expect(queueName, Equals, "myqueue")
-			queueName, message = queue.Pull()
+			queueName, message = queue.Pull(time.Now())
 			c.Expect(queueName, Equals, "")
 			c.Expect(message, IsNil)
 		})

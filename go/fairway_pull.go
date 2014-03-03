@@ -1,8 +1,9 @@
 package fairway
 
 func FairwayPull() string {
-  return `
+	return `
 local namespace = KEYS[1];
+local timestamp = KEYS[2];
 
 local k = function (queue, subkey)
   return namespace .. queue .. ':' .. subkey;
@@ -17,6 +18,21 @@ for i, queue in ipairs(ARGV) do
   local active_facets = k(queue, 'active_facets');
   local round_robin   = k(queue, 'facet_queue');
   local facet_pool    = k(queue, 'facet_pool');
+  local inflight      = k(queue, 'inflight');
+
+  -- Check if any current inflight messages
+  -- have been inflight for a long time.
+  local inflightmessage = redis.call('zrange', inflight, 0, 0, 'WITHSCORES');
+
+  -- If we have an inflight message and it's score
+  -- is less than the current pull timestamp, reset
+  -- the inflight score for the the message and resend.
+  if #inflightmessage > 0 then
+    if inflightmessage[2] <= timestamp then
+      redis.call('zadd', inflight, timestamp + 600, inflightmessage[1]);
+      return {queue, inflightmessage[1]}
+    end
+  end
 
   -- Pull a facet from the round-robin list.
   -- This list guarantees each active facet will have a
@@ -31,6 +47,7 @@ for i, queue in ipairs(ARGV) do
     local message  = redis.call('rpop', messages);
 
     if message then
+      redis.call('zadd', inflight, timestamp + 600, message);
       redis.call('decr', k(queue, 'length'));
     end
 
