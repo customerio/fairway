@@ -95,7 +95,7 @@ func (s *scripts) ack(queueName string, message *Msg) error {
 
 	script := s.findScript(FairwayAck, 1)
 
-	_, err := redis.Strings(script.Do(conn, s.namespace(), queueName, message.json()))
+	_, err := redis.Strings(script.Do(conn, s.namespace(), queueName, message.Original))
 
 	return err
 }
