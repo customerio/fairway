@@ -1,9 +1,5 @@
 package fairway
 
-import (
-	"time"
-)
-
 type Queue struct {
 	conn Connection
 	name string
@@ -13,8 +9,8 @@ func NewQueue(conn Connection, name string) *Queue {
 	return &Queue{conn, name}
 }
 
-func (q *Queue) Pull(date time.Time) (string, *Msg) {
-	return q.conn.Configuration().scripts().pull(q.name, int(date.Unix()))
+func (q *Queue) Pull(timestamp int64) (string, *Msg) {
+	return q.conn.Configuration().scripts().pull(q.name, int(timestamp))
 }
 
 func (q *Queue) Inflight() []string {

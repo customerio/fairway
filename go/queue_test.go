@@ -25,11 +25,11 @@ func QueueSpec(c gospec.Context) {
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
 
-			queueName, message := queue.Pull(time.Now())
+			queueName, message := queue.Pull(time.Now().Unix())
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg1.json())
 
-			queueName, message = queue.Pull(time.Now())
+			queueName, message = queue.Pull(time.Now().Unix())
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg2.json())
 		})
@@ -41,7 +41,7 @@ func QueueSpec(c gospec.Context) {
 
 			c.Expect(len(queue.Inflight()), Equals, 0)
 
-			queueName, message := queue.Pull(time.Now())
+			queueName, message := queue.Pull(time.Now().Unix())
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg1.json())
 
@@ -60,15 +60,45 @@ func QueueSpec(c gospec.Context) {
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
 
-			queueName, message := queue.Pull(time.Now().Add(-10 * time.Minute))
+			queueName, message := queue.Pull(time.Now().Add(-10 * time.Minute).Unix())
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg1.json())
 
-			queueName, message = queue.Pull(time.Now())
+			queueName, message = queue.Pull(time.Now().Unix())
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg1.json())
 
-			queueName, message = queue.Pull(time.Now())
+			queueName, message = queue.Pull(time.Now().Unix())
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(message.json(), Equals, msg2.json())
+		})
+
+		c.Specify("doesn't place pulled message on inflight sorted set if 0 timestamp", func() {
+			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
+
+			conn.Deliver(msg1)
+
+			c.Expect(len(queue.Inflight()), Equals, 0)
+
+			queueName, message := queue.Pull(0)
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(message.json(), Equals, msg1.json())
+
+			c.Expect(len(queue.Inflight()), Equals, 0)
+		})
+
+		c.Specify("doesn't pull from inflight message set if timestamp is 0", func() {
+			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]string{"name": "mymessage2"})
+
+			conn.Deliver(msg1)
+			conn.Deliver(msg2)
+
+			queueName, message := queue.Pull(0)
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(message.json(), Equals, msg1.json())
+
+			queueName, message = queue.Pull(time.Now().Unix())
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg2.json())
 		})
@@ -87,11 +117,11 @@ func QueueSpec(c gospec.Context) {
 			conn.Deliver(msg2)
 			conn.Deliver(msg3)
 
-			_, message := queue.Pull(time.Now())
+			_, message := queue.Pull(time.Now().Unix())
 			c.Expect(message.json(), Equals, msg1.json())
-			_, message = queue.Pull(time.Now())
+			_, message = queue.Pull(time.Now().Unix())
 			c.Expect(message.json(), Equals, msg3.json())
-			_, message = queue.Pull(time.Now())
+			_, message = queue.Pull(time.Now().Unix())
 			c.Expect(message.json(), Equals, msg2.json())
 		})
 
@@ -105,7 +135,7 @@ func QueueSpec(c gospec.Context) {
 			count, _ := redis.Int(r.Do("scard", "fairway:myqueue:active_facets"))
 			c.Expect(count, Equals, 1)
 
-			queue.Pull(time.Now())
+			queue.Pull(time.Now().Unix())
 
 			count, _ = redis.Int(r.Do("scard", "fairway:myqueue:active_facets"))
 			c.Expect(count, Equals, 0)
@@ -115,9 +145,9 @@ func QueueSpec(c gospec.Context) {
 			msg, _ := NewMsg(map[string]string{})
 			conn.Deliver(msg)
 
-			queueName, message := queue.Pull(time.Now())
+			queueName, message := queue.Pull(time.Now().Unix())
 			c.Expect(queueName, Equals, "myqueue")
-			queueName, message = queue.Pull(time.Now())
+			queueName, message = queue.Pull(time.Now().Unix())
 			c.Expect(queueName, Equals, "")
 			c.Expect(message, IsNil)
 		})

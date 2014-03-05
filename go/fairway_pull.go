@@ -20,17 +20,19 @@ for i, queue in ipairs(ARGV) do
   local facet_pool    = k(queue, 'facet_pool');
   local inflight      = k(queue, 'inflight');
 
-  -- Check if any current inflight messages
-  -- have been inflight for a long time.
-  local inflightmessage = redis.call('zrange', inflight, 0, 0, 'WITHSCORES');
+  if timestamp ~= '0' then
+    -- Check if any current inflight messages
+    -- have been inflight for a long time.
+    local inflightmessage = redis.call('zrange', inflight, 0, 0, 'WITHSCORES');
 
-  -- If we have an inflight message and it's score
-  -- is less than the current pull timestamp, reset
-  -- the inflight score for the the message and resend.
-  if #inflightmessage > 0 then
-    if inflightmessage[2] <= timestamp then
-      redis.call('zadd', inflight, timestamp + 600, inflightmessage[1]);
-      return {queue, inflightmessage[1]}
+    -- If we have an inflight message and it's score
+    -- is less than the current pull timestamp, reset
+    -- the inflight score for the the message and resend.
+    if #inflightmessage > 0 then
+      if inflightmessage[2] <= timestamp then
+        redis.call('zadd', inflight, timestamp + 600, inflightmessage[1]);
+        return {queue, inflightmessage[1]}
+      end
     end
   end
 
@@ -47,7 +49,10 @@ for i, queue in ipairs(ARGV) do
     local message  = redis.call('rpop', messages);
 
     if message then
-      redis.call('zadd', inflight, timestamp + 600, message);
+      if timestamp ~= '0' then
+        redis.call('zadd', inflight, timestamp + 600, message);
+      end
+
       redis.call('decr', k(queue, 'length'));
     end
 
