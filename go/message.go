@@ -6,6 +6,7 @@ import (
 )
 
 type Msg struct {
+	Original string
 	*simplejson.Json
 }
 
@@ -20,7 +21,7 @@ func NewMsg(body interface{}) (*Msg, error) {
 		return nil, err
 	}
 
-	return &Msg{simplej}, nil
+	return &Msg{string(bytes), simplej}, nil
 }
 
 func NewMsgFromString(body string) (*Msg, error) {
@@ -29,7 +30,7 @@ func NewMsgFromString(body string) (*Msg, error) {
 		return nil, err
 	}
 
-	return &Msg{simplej}, nil
+	return &Msg{body, simplej}, nil
 }
 
 func (m *Msg) json() string {
