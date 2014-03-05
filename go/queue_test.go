@@ -4,8 +4,6 @@ import (
 	"github.com/customerio/gospec"
 	. "github.com/customerio/gospec"
 	"github.com/customerio/redigo/redis"
-
-	"time"
 )
 
 func QueueSpec(c gospec.Context) {
@@ -25,11 +23,11 @@ func QueueSpec(c gospec.Context) {
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
 
-			queueName, message := queue.Pull(time.Now().Unix())
+			queueName, message := queue.Pull(-1)
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg1.json())
 
-			queueName, message = queue.Pull(time.Now().Unix())
+			queueName, message = queue.Pull(-1)
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg2.json())
 		})
@@ -41,7 +39,7 @@ func QueueSpec(c gospec.Context) {
 
 			c.Expect(len(queue.Inflight()), Equals, 0)
 
-			queueName, message := queue.Pull(time.Now().Unix())
+			queueName, message := queue.Pull(100)
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg1.json())
 
@@ -60,45 +58,45 @@ func QueueSpec(c gospec.Context) {
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
 
-			queueName, message := queue.Pull(time.Now().Add(-10 * time.Minute).Unix())
+			queueName, message := queue.Pull(0)
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg1.json())
 
-			queueName, message = queue.Pull(time.Now().Unix())
+			queueName, message = queue.Pull(10)
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg1.json())
 
-			queueName, message = queue.Pull(time.Now().Unix())
+			queueName, message = queue.Pull(10)
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg2.json())
 		})
 
-		c.Specify("doesn't place pulled message on inflight sorted set if 0 timestamp", func() {
+		c.Specify("doesn't place pulled message on inflight sorted set if inflight is disabled", func() {
 			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
 
 			conn.Deliver(msg1)
 
 			c.Expect(len(queue.Inflight()), Equals, 0)
 
-			queueName, message := queue.Pull(0)
+			queueName, message := queue.Pull(-1)
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg1.json())
 
 			c.Expect(len(queue.Inflight()), Equals, 0)
 		})
 
-		c.Specify("doesn't pull from inflight message set if timestamp is 0", func() {
+		c.Specify("doesn't pull from inflight message set if inflight is disabled", func() {
 			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
 			msg2, _ := NewMsg(map[string]string{"name": "mymessage2"})
 
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
 
-			queueName, message := queue.Pull(0)
+			queueName, message := queue.Pull(-1)
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg1.json())
 
-			queueName, message = queue.Pull(time.Now().Unix())
+			queueName, message = queue.Pull(-1)
 			c.Expect(queueName, Equals, "myqueue")
 			c.Expect(message.json(), Equals, msg2.json())
 		})
@@ -117,11 +115,11 @@ func QueueSpec(c gospec.Context) {
 			conn.Deliver(msg2)
 			conn.Deliver(msg3)
 
-			_, message := queue.Pull(time.Now().Unix())
+			_, message := queue.Pull(-1)
 			c.Expect(message.json(), Equals, msg1.json())
-			_, message = queue.Pull(time.Now().Unix())
+			_, message = queue.Pull(-1)
 			c.Expect(message.json(), Equals, msg3.json())
-			_, message = queue.Pull(time.Now().Unix())
+			_, message = queue.Pull(-1)
 			c.Expect(message.json(), Equals, msg2.json())
 		})
 
@@ -135,7 +133,7 @@ func QueueSpec(c gospec.Context) {
 			count, _ := redis.Int(r.Do("scard", "fairway:myqueue:active_facets"))
 			c.Expect(count, Equals, 1)
 
-			queue.Pull(time.Now().Unix())
+			queue.Pull(-1)
 
 			count, _ = redis.Int(r.Do("scard", "fairway:myqueue:active_facets"))
 			c.Expect(count, Equals, 0)
@@ -145,9 +143,9 @@ func QueueSpec(c gospec.Context) {
 			msg, _ := NewMsg(map[string]string{})
 			conn.Deliver(msg)
 
-			queueName, message := queue.Pull(time.Now().Unix())
+			queueName, message := queue.Pull(-1)
 			c.Expect(queueName, Equals, "myqueue")
-			queueName, message = queue.Pull(time.Now().Unix())
+			queueName, message = queue.Pull(-1)
 			c.Expect(queueName, Equals, "")
 			c.Expect(message, IsNil)
 		})

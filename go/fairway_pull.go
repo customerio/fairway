@@ -3,7 +3,8 @@ package fairway
 func FairwayPull() string {
 	return `
 local namespace = KEYS[1];
-local timestamp = KEYS[2];
+local timestamp = tonumber(KEYS[2]);
+local wait = tonumber(KEYS[3]);
 
 local k = function (queue, subkey)
   return namespace .. queue .. ':' .. subkey;
@@ -20,7 +21,7 @@ for i, queue in ipairs(ARGV) do
   local facet_pool    = k(queue, 'facet_pool');
   local inflight      = k(queue, 'inflight');
 
-  if timestamp ~= '0' then
+  if wait ~= -1 then
     -- Check if any current inflight messages
     -- have been inflight for a long time.
     local inflightmessage = redis.call('zrange', inflight, 0, 0, 'WITHSCORES');
@@ -29,8 +30,8 @@ for i, queue in ipairs(ARGV) do
     -- is less than the current pull timestamp, reset
     -- the inflight score for the the message and resend.
     if #inflightmessage > 0 then
-      if inflightmessage[2] <= timestamp then
-        redis.call('zadd', inflight, timestamp + 600, inflightmessage[1]);
+      if tonumber(inflightmessage[2]) <= timestamp then
+        redis.call('zadd', inflight, timestamp + wait, inflightmessage[1]);
         return {queue, inflightmessage[1]}
       end
     end
@@ -49,8 +50,8 @@ for i, queue in ipairs(ARGV) do
     local message  = redis.call('rpop', messages);
 
     if message then
-      if timestamp ~= '0' then
-        redis.call('zadd', inflight, timestamp + 600, message);
+      if wait ~= -1 then
+        redis.call('zadd', inflight, timestamp + wait, message);
       end
 
       redis.call('decr', k(queue, 'length'));

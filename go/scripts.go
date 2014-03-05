@@ -1,8 +1,10 @@
 package fairway
 
 import (
-	"fmt"
 	"github.com/customerio/redigo/redis"
+
+	"fmt"
+	"time"
 )
 
 type scripts struct {
@@ -56,13 +58,13 @@ func (s *scripts) deliver(channel, facet string, msg *Msg) error {
 	return err
 }
 
-func (s *scripts) pull(queueName string, timestamp int) (string, *Msg) {
+func (s *scripts) pull(queueName string, wait int) (string, *Msg) {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
 
-	script := s.findScript(FairwayPull, 2)
+	script := s.findScript(FairwayPull, 3)
 
-	result, err := redis.Strings(script.Do(conn, s.namespace(), timestamp, queueName))
+	result, err := redis.Strings(script.Do(conn, s.namespace(), int(time.Now().Unix()), wait, queueName))
 
 	if err != nil {
 		return "", nil
