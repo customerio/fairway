@@ -32,7 +32,7 @@ func NewConfig(server string, db string, poolSize int) *Config {
 		[]*QueueDefinition{},
 		&redis.Pool{
 			MaxIdle:     poolSize,
-			MaxActive:   poolSize,
+			MaxActive:   0,
 			IdleTimeout: 240 * time.Second,
 			Dial: func() (redis.Conn, error) {
 				c, err := redis.Dial("tcp", server)

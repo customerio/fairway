@@ -25,10 +25,10 @@ func ConfigSpec(c gospec.Context) {
 
 	c.Specify("sets redis pool size", func() {
 		c.Expect(config.Pool.MaxIdle, Equals, 10)
-		c.Expect(config.Pool.MaxActive, Equals, 10)
+		c.Expect(config.Pool.MaxActive, Equals, 0)
 		config = NewConfig("localhost:6379", "15", 20)
 		c.Expect(config.Pool.MaxIdle, Equals, 20)
-		c.Expect(config.Pool.MaxActive, Equals, 20)
+		c.Expect(config.Pool.MaxActive, Equals, 0)
 	})
 
 	c.Specify("can specify custom namespace", func() {
