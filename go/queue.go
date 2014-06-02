@@ -9,6 +9,14 @@ func NewQueue(conn Connection, name string) *Queue {
 	return &Queue{conn, name}
 }
 
+func (q *Queue) Name() string {
+	return q.name
+}
+
+func (q *Queue) Length() (int, error) {
+	return q.conn.Configuration().scripts().length(q.name)
+}
+
 func (q *Queue) Pull(resendTimeframe int) (string, *Msg) {
 	return q.conn.Configuration().scripts().pull(q.name, resendTimeframe)
 }

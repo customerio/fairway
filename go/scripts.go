@@ -58,6 +58,12 @@ func (s *scripts) deliver(channel, facet string, msg *Msg) error {
 	return err
 }
 
+func (s *scripts) length(queue string) (int, error) {
+	conn := s.config.Pool.Get()
+	defer conn.Close()
+	return redis.Int(conn.Do("get", s.namespace()+queue+":length"))
+}
+
 func (s *scripts) pull(queueName string, wait int) (string, *Msg) {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
