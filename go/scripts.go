@@ -97,6 +97,17 @@ func (s *scripts) inflight(queueName string) []string {
 	return result
 }
 
+func (s *scripts) ping(queueName string, message *Msg, wait int) error {
+	conn := s.config.Pool.Get()
+	defer conn.Close()
+
+	script := s.findScript(FairwayPing, 3)
+
+	_, err := redis.Strings(script.Do(conn, s.namespace(), int(time.Now().Unix()), wait, queueName, message.Original))
+
+	return err
+}
+
 func (s *scripts) ack(queueName string, message *Msg) error {
 	conn := s.config.Pool.Get()
 	defer conn.Close()

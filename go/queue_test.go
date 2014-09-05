@@ -71,6 +71,32 @@ func QueueSpec(c gospec.Context) {
 			c.Expect(message.json(), Equals, msg2.json())
 		})
 
+		c.Specify("allows puller to ping to keep message inflight", func() {
+			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]string{"name": "mymessage2"})
+
+			conn.Deliver(msg1)
+			conn.Deliver(msg2)
+
+			queueName, message := queue.Pull(0)
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(message.json(), Equals, msg1.json())
+
+			// Extends time before message is resent
+			queue.Ping(msg1, 10)
+
+			queueName, message = queue.Pull(10)
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(message.json(), Equals, msg2.json())
+
+			// Sets time for message to resend to now
+			queue.Ping(msg1, 0)
+
+			queueName, message = queue.Pull(10)
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(message.json(), Equals, msg1.json())
+		})
+
 		c.Specify("doesn't place pulled message on inflight sorted set if inflight is disabled", func() {
 			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
 

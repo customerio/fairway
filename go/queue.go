@@ -25,6 +25,10 @@ func (q *Queue) Inflight() []string {
 	return q.conn.Configuration().scripts().inflight(q.name)
 }
 
+func (q *Queue) Ping(message *Msg, resendTimeframe int) error {
+	return q.conn.Configuration().scripts().ping(q.name, message, resendTimeframe)
+}
+
 func (q *Queue) Ack(message *Msg) error {
 	return q.conn.Configuration().scripts().ack(q.name, message)
 }
