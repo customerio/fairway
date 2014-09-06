@@ -1,7 +1,7 @@
 package fairway
 
 func FairwayDeliver() string {
-  return `
+	return `
 local namespace = KEYS[1];
 local topic     = ARGV[1];
 local facet     = ARGV[2];

@@ -97,6 +97,76 @@ func QueueSpec(c gospec.Context) {
 			c.Expect(message.json(), Equals, msg1.json())
 		})
 
+		c.Specify("set limits messages inflight", func() {
+			limit, err := queue.InflightLimit()
+
+			c.Expect(limit, Equals, 0)
+			c.Expect(err, IsNil)
+
+			queue.SetInflightLimit(1)
+
+			limit, err = queue.InflightLimit()
+
+			c.Expect(limit, Equals, 1)
+			c.Expect(err, IsNil)
+		})
+
+		c.Specify("limits messages inflight", func() {
+			config.Facet = func(msg *Msg) string {
+				str, _ := msg.Get("facet").String()
+				return str
+			}
+
+			msg1, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage2"})
+			msg3, _ := NewMsg(map[string]string{"facet": "2", "name": "mymessage3"})
+
+			conn.Deliver(msg1)
+			conn.Deliver(msg2)
+			conn.Deliver(msg3)
+
+			queue.SetInflightLimit(1)
+
+			_, message := queue.Pull(2)
+			c.Expect(message.json(), Equals, msg1.json())
+			_, message = queue.Pull(2)
+			c.Expect(message.json(), Equals, msg3.json())
+
+			_, message = queue.Pull(2)
+			c.Expect(message, IsNil)
+			_, message = queue.Pull(2)
+			c.Expect(message, IsNil)
+
+			queue.Ack(msg1)
+
+			_, message = queue.Pull(2)
+			c.Expect(message.json(), Equals, msg2.json())
+		})
+
+		c.Specify("if inflight limit is 0, no limit", func() {
+			config.Facet = func(msg *Msg) string {
+				str, _ := msg.Get("facet").String()
+				return str
+			}
+
+			msg1, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage2"})
+			msg3, _ := NewMsg(map[string]string{"facet": "2", "name": "mymessage3"})
+
+			conn.Deliver(msg1)
+			conn.Deliver(msg2)
+			conn.Deliver(msg3)
+
+			queue.SetInflightLimit(0)
+
+			_, message := queue.Pull(2)
+			c.Expect(message.json(), Equals, msg1.json())
+			_, message = queue.Pull(2)
+			c.Expect(message.json(), Equals, msg3.json())
+			_, message = queue.Pull(2)
+			c.Expect(message.json(), Equals, msg2.json())
+		})
+
 		c.Specify("doesn't place pulled message on inflight sorted set if inflight is disabled", func() {
 			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
 

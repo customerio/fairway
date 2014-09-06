@@ -15,11 +15,12 @@ end
 -- provided queues, and return a message
 -- from the first one that isn't empty.
 for i, queue in ipairs(ARGV) do
-  local priorities    = k(queue, 'priorities');
-  local active_facets = k(queue, 'active_facets');
-  local round_robin   = k(queue, 'facet_queue');
-  local facet_pool    = k(queue, 'facet_pool');
-  local inflight      = k(queue, 'inflight');
+  local priorities     = k(queue, 'priorities');
+  local active_facets  = k(queue, 'active_facets');
+  local round_robin    = k(queue, 'facet_queue');
+  local facet_pool     = k(queue, 'facet_pool');
+  local inflight       = k(queue, 'inflight');
+  local inflight_limit = k(queue, 'limit');
 
   if wait ~= -1 then
     -- Check if any current inflight messages
@@ -46,12 +47,15 @@ for i, queue in ipairs(ARGV) do
     -- If we found an active facet, we know the facet
     -- has at least one message available to be pulled
     -- from it's message queue.
-    local messages = k(queue, facet);
-    local message  = redis.call('rpop', messages);
+    local messages       = k(queue, facet);
+    local inflight_total = k(queue, facet .. ':inflight');
+
+    local message = redis.call('rpop', messages);
 
     if message then
       if wait ~= -1 then
         redis.call('zadd', inflight, timestamp + wait, message);
+        redis.call('incr', inflight_total);
       end
 
       redis.call('decr', k(queue, 'length'));
@@ -105,10 +109,27 @@ for i, queue in ipairs(ARGV) do
       elseif current > priority or current > length then
         redis.call('hset', facet_pool, facet, current - 1);
       
+      -- If we are keeping track of inflight messages
+      -- check to see if we're at the max number of inflight
+      -- messages, and if so, don't place the facet back
+      -- on the round-robin queue (the next acknowledge will)
+      elseif wait ~= -1 then
+        local max = tonumber(redis.call('get', inflight_limit)) or 0
+
+        if max > 0 then
+          local current = tonumber(redis.call('get', inflight_total)) or 0
+
+          if current < max then
+            redis.call('lpush', round_robin, facet);
+          end
+        else
+          redis.call('lpush', round_robin, facet);
+        end
+
       -- If the current priority is equals the
-      -- desired priority, let's maintain the current priority
-      -- by pushing the current facet on the round-robin
-      -- queue once.
+      -- desired priority and we aren't at our max inflight,
+      -- let's maintain the current priority by pushing
+      -- the current facet on the round-robin queue once.
       else
         redis.call('lpush', round_robin, facet);
       end

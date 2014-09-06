@@ -97,6 +97,28 @@ func (s *scripts) inflight(queueName string) []string {
 	return result
 }
 
+func (s *scripts) inflightLimit(queue string) (limit int, err error) {
+	conn := s.config.Pool.Get()
+	defer conn.Close()
+
+	limit, err = redis.Int(conn.Do("get", s.namespace()+queue+":limit"))
+
+	if err != nil && err.Error() == "redigo: nil returned" {
+		return 0, nil
+	}
+
+	return
+}
+
+func (s *scripts) setInflightLimit(queue string, limit int) (err error) {
+	conn := s.config.Pool.Get()
+	defer conn.Close()
+
+	_, err = conn.Do("set", s.namespace()+queue+":limit", limit)
+
+	return
+}
+
 func (s *scripts) ping(queueName string, message *Msg, wait int) error {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
@@ -108,13 +130,13 @@ func (s *scripts) ping(queueName string, message *Msg, wait int) error {
 	return err
 }
 
-func (s *scripts) ack(queueName string, message *Msg) error {
+func (s *scripts) ack(queueName string, facet string, message *Msg) error {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
 
 	script := s.findScript(FairwayAck, 1)
 
-	_, err := redis.Strings(script.Do(conn, s.namespace(), queueName, message.Original))
+	_, err := redis.Strings(script.Do(conn, s.namespace(), queueName, facet, message.Original))
 
 	return err
 }
