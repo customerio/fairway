@@ -30,6 +30,10 @@ if removed > 0 then
   if max > 0 and current + 1 == max then
     redis.call('lpush', round_robin, facet);
   end
+
+  if current == 0 then
+    redis.call('del', inflight_total);
+  end
 end
 
 return removed

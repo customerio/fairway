@@ -112,6 +112,9 @@ func QueueSpec(c gospec.Context) {
 		})
 
 		c.Specify("limits messages inflight", func() {
+			r := config.Pool.Get()
+			defer r.Close()
+
 			config.Facet = func(msg *Msg) string {
 				str, _ := msg.Get("facet").String()
 				return str
@@ -129,18 +132,47 @@ func QueueSpec(c gospec.Context) {
 
 			_, message := queue.Pull(2)
 			c.Expect(message.json(), Equals, msg1.json())
+
+			count, _ := redis.Int(r.Do("get", "fairway:myqueue:1:inflight"))
+			c.Expect(count, Equals, 1)
+
 			_, message = queue.Pull(2)
 			c.Expect(message.json(), Equals, msg3.json())
 
+			count, _ = redis.Int(r.Do("get", "fairway:myqueue:1:inflight"))
+			c.Expect(count, Equals, 1)
+
+			count, _ = redis.Int(r.Do("get", "fairway:myqueue:2:inflight"))
+			c.Expect(count, Equals, 1)
+
 			_, message = queue.Pull(2)
 			c.Expect(message, IsNil)
 			_, message = queue.Pull(2)
 			c.Expect(message, IsNil)
+
+			count, _ = redis.Int(r.Do("get", "fairway:myqueue:1:inflight"))
+			c.Expect(count, Equals, 1)
+
+			count, _ = redis.Int(r.Do("get", "fairway:myqueue:2:inflight"))
+			c.Expect(count, Equals, 1)
 
 			queue.Ack(msg1)
 
+			count, err := redis.Int(r.Do("get", "fairway:myqueue:1:inflight"))
+			c.Expect(count, Equals, 0)
+			c.Expect(err.Error(), Equals, "redigo: nil returned")
+
+			count, _ = redis.Int(r.Do("get", "fairway:myqueue:2:inflight"))
+			c.Expect(count, Equals, 1)
+
 			_, message = queue.Pull(2)
 			c.Expect(message.json(), Equals, msg2.json())
+
+			count, _ = redis.Int(r.Do("get", "fairway:myqueue:1:inflight"))
+			c.Expect(count, Equals, 1)
+
+			count, _ = redis.Int(r.Do("get", "fairway:myqueue:2:inflight"))
+			c.Expect(count, Equals, 1)
 		})
 
 		c.Specify("if inflight limit is 0, no limit", func() {
