@@ -29,6 +29,18 @@ module Fairway
       end.sum
     end
 
+    def inflight_limit=(limit)
+      redis.with_each do |conn|
+        unique_queues.each do |queue|
+          if limit < 1
+            conn.del("#{queue}:limit")
+          else
+            conn.set("#{queue}:limit", limit)
+          end
+        end
+      end
+    end
+
     def peek
       scripts.fairway_peek(@queue_names.shuffle.uniq)
     end
