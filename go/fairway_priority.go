@@ -1,7 +1,7 @@
 package fairway
 
 func FairwayPriority() string {
-  return `
+	return `
 local namespace    = KEYS[1];
 local queue        = ARGV[1];
 local facet        = ARGV[2];

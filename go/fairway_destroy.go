@@ -1,7 +1,7 @@
 package fairway
 
 func FairwayDestroy() string {
-  return `
+	return `
 local namespace = KEYS[1];
 
 local k = function (queue, subkey)

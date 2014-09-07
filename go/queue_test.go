@@ -157,6 +157,10 @@ func QueueSpec(c gospec.Context) {
 			c.Expect(count, Equals, 1)
 
 			queue.Ack(msg1)
+			queue.Ack(msg1)
+			queue.Ack(msg1)
+			queue.Ack(msg1)
+			queue.Ack(msg1)
 
 			count, err := redis.Int(r.Do("get", "fairway:myqueue:1:inflight"))
 			c.Expect(count, Equals, 0)
