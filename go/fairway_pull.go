@@ -67,10 +67,17 @@ for i, queue in ipairs(ARGV) do
     -- is empty, then it is no longer active as
     -- it no longer has any messages.
     if length == 0 then
-      -- We remove the facet from the set of active
-      -- facets and don't push the facet back on the
-      -- round-robin queue.
-      redis.call('srem', active_facets, facet);
+
+      -- If we aren't tracking inflight messages,
+      -- remove facet form active facets. If we are
+      -- tracking inflight messages, this happens
+      -- when acknowledging the message.
+      if wait == -1 then
+        -- We remove the facet from the set of active
+        -- facets and don't push the facet back on the
+        -- round-robin queue.
+        redis.call('srem', active_facets, facet);
+      end
      
     -- If the facet still has messages to process,
     -- it remains in the active facet set, and is
