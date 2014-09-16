@@ -24,19 +24,18 @@ local removed = tonumber(redis.call('zrem', inflight, message))
 if removed > 0 then
   local current = tonumber(redis.call('decr', inflight_total));
   local max     = tonumber(redis.call('get', inflight_limit)) or 0;
+  local length  = redis.call('llen', messages);
 
   -- If we decremented current to one less than the max,
   -- then we were at the limit, so re-add the facet to
   -- the round robin queue to allow additional messages
   -- to be dequeued.
-  if max > 0 and current + 1 == max then
+  if max > 0 and length > 0 and current + 1 == max then
     redis.call('lpush', round_robin, facet);
   end
 
   if current == 0 then
     redis.call('del', inflight_total);
-
-    local length = redis.call('llen', messages);
 
     -- If we have no currently inflight messages
     -- and there are no more messages in the
