@@ -316,6 +316,9 @@ func QueueSpec(c gospec.Context) {
 		})
 
 		c.Specify("if inflight limit is 0, no limit", func() {
+			r := config.Pool.Get()
+			defer r.Close()
+
 			config.Facet = func(msg *Msg) string {
 				str, _ := msg.Get("facet").String()
 				return str
@@ -325,11 +328,16 @@ func QueueSpec(c gospec.Context) {
 			msg2, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage2"})
 			msg3, _ := NewMsg(map[string]string{"facet": "2", "name": "mymessage3"})
 
+			queue.SetInflightLimit(0)
+
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
 			conn.Deliver(msg3)
 
-			queue.SetInflightLimit(0)
+			active, _ := redis.Strings(r.Do("smembers", "fairway:myqueue:active_facets"))
+			c.Expect(len(active), Equals, 2)
+			fqueue, _ := redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
+			c.Expect(fqueue, Equals, 2)
 
 			_, message := queue.Pull(2)
 			c.Expect(message.json(), Equals, msg1.json())
@@ -337,8 +345,49 @@ func QueueSpec(c gospec.Context) {
 			_, message = queue.Pull(2)
 			c.Expect(message.json(), Equals, msg3.json())
 
+			active, _ = redis.Strings(r.Do("smembers", "fairway:myqueue:active_facets"))
+			c.Expect(len(active), Equals, 1)
+			fqueue, _ = redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
+			c.Expect(fqueue, Equals, 1)
+
 			_, message = queue.Pull(2)
 			c.Expect(message.json(), Equals, msg2.json())
+
+			active, _ = redis.Strings(r.Do("smembers", "fairway:myqueue:active_facets"))
+			c.Expect(len(active), Equals, 0)
+			fqueue, _ = redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
+			c.Expect(fqueue, Equals, 0)
+
+			msg4, _ := NewMsg(map[string]string{"facet": "2", "name": "mymessage4"})
+
+			conn.Deliver(msg4)
+
+			active, _ = redis.Strings(r.Do("smembers", "fairway:myqueue:active_facets"))
+			c.Expect(len(active), Equals, 1)
+			fqueue, _ = redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
+			c.Expect(fqueue, Equals, 1)
+
+			queue.Ack(msg1)
+
+			active, _ = redis.Strings(r.Do("smembers", "fairway:myqueue:active_facets"))
+			c.Expect(len(active), Equals, 1)
+			fqueue, _ = redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
+			c.Expect(fqueue, Equals, 1)
+
+			_, message = queue.Pull(2)
+			c.Expect(message.json(), Equals, msg4.json())
+
+			active, _ = redis.Strings(r.Do("smembers", "fairway:myqueue:active_facets"))
+			c.Expect(len(active), Equals, 0)
+			fqueue, _ = redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
+			c.Expect(fqueue, Equals, 0)
+
+			_, message = queue.Pull(2)
+			c.Expect(message, IsNil)
+
+			queue.Ack(msg2)
+			queue.Ack(msg3)
+			queue.Ack(msg4)
 		})
 
 		c.Specify("doesn't place pulled message on inflight sorted set if inflight is disabled", func() {

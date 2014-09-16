@@ -68,11 +68,12 @@ for i, queue in ipairs(ARGV) do
     -- it no longer has any messages.
     if length == 0 then
 
-      -- If we aren't tracking inflight messages,
-      -- remove facet form active facets. If we are
-      -- tracking inflight messages, this happens
+      local max = tonumber(redis.call('get', inflight_limit)) or 0;
+      -- If we aren't limiting inflight messages,
+      -- remove facet from active facets. If we are
+      -- limiting inflight messages, this happens
       -- when acknowledging the message.
-      if wait == -1 then
+      if max == 0 then
         -- We remove the facet from the set of active
         -- facets and don't push the facet back on the
         -- round-robin queue.
