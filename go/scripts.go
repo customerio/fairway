@@ -58,6 +58,12 @@ func (s *scripts) deliver(channel, facet string, msg *Msg) error {
 	return err
 }
 
+func (s *scripts) facetLength(queue string, facet string) (int, error) {
+	conn := s.config.Pool.Get()
+	defer conn.Close()
+	return redis.Int(conn.Do("llen", s.namespace()+queue+":"+facet))
+}
+
 func (s *scripts) length(queue string) (int, error) {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
@@ -108,6 +114,19 @@ func (s *scripts) inflightLimit(queue string) (limit int, err error) {
 	}
 
 	return
+}
+
+func (s *scripts) activeFacets(queue string) ([]string, error) {
+	conn := s.config.Pool.Get()
+	defer conn.Close()
+
+	active, err := redis.Strings(conn.Do("smembers", s.namespace()+queue+":active_facets"))
+
+	if err != nil && err.Error() == "redigo: nil returned" {
+		return nil, err
+	}
+
+	return active, nil
 }
 
 func (s *scripts) setInflightLimit(queue string, limit int) (err error) {

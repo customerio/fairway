@@ -9,6 +9,18 @@ func NewQueue(conn Connection, name string) *Queue {
 	return &Queue{conn, name}
 }
 
+func (q *Queue) ActiveFacets() ([]*Facet, error) {
+	var facets []*Facet
+	names, err := q.conn.Configuration().scripts().activeFacets(q.name)
+	if err != nil {
+		return nil, err
+	}
+	for _, f := range names {
+		facets = append(facets, NewFacet(q, f))
+	}
+	return facets, nil
+}
+
 func (q *Queue) Name() string {
 	return q.name
 }

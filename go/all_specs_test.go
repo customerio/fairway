@@ -1,9 +1,10 @@
 package fairway
 
 import (
+	"testing"
+
 	"github.com/customerio/gospec"
 	"github.com/customerio/redigo/redis"
-	"testing"
 )
 
 // You will need to list every spec in a TestXxx method like this,
@@ -29,6 +30,7 @@ func TestAllSpecs(t *testing.T) {
 	r.AddSpec(ChanneledConnectionSpec)
 	r.AddSpec(MsgSpec)
 	r.AddSpec(QueueSpec)
+	r.AddSpec(FacetSpec)
 
 	// Run GoSpec and report any errors to gotest's `testing.T` instance
 	gospec.MainGoTest(r, t)
