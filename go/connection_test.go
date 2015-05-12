@@ -58,7 +58,7 @@ func ConnectionSpec(c gospec.Context) {
 			c.Expect(value, Equals, msg.json())
 		})
 
-		c.Specify("adds facets to the list of active facets", func() {
+		c.Specify("adds facet to the list of active facets", func() {
 			r := config.Pool.Get()
 			defer r.Close()
 
