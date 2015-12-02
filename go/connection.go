@@ -5,6 +5,7 @@ type Connection interface {
 	Queues() []*Queue
 	Channel(*Msg) string
 	Deliver(*Msg) error
+	DeliverBytes(channel, facet string, bytes []byte) error
 	Configuration() *Config
 }
 
@@ -38,6 +39,10 @@ func (c *conn) Deliver(msg *Msg) error {
 	channel := c.Channel(msg)
 	facet := c.config.Facet(msg)
 	return c.scripts.deliver(channel, facet, msg)
+}
+
+func (c *conn) DeliverBytes(channel, facet string, msg []byte) error {
+	return c.scripts.deliverBytes(channel, facet, msg)
 }
 
 func (c *conn) Configuration() *Config {
