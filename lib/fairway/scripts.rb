@@ -32,6 +32,26 @@ module Fairway
       end
     end
 
+    def fairway_pull(timestamp, wait, queue_name)
+      loaded = false
+
+      first_pool do |conn|
+        conn.evalsha(script_sha(:fairway_pull), [namespace, timestamp, wait], [queue_name])
+      end
+
+    rescue Redis::CommandError => ex
+      if ex.message.include?("NOSCRIPT") && !loaded
+        redis.with_each do |conn|
+          conn.script(:load, script_source(:fairway_pull))
+        end
+
+        loaded = true
+        retry
+      else
+        raise
+      end
+    end
+
     def method_missing(method_name, *args)
       loaded = false
 

@@ -19,39 +19,45 @@ for i = 1, #registered_queues, 2 do
   -- If the message topic matches the queue topic,
   -- we deliver the message to the queue.
   if string.find(topic, queue_topic) then
-    local priorities    = k(queue, 'priorities');
-    local active_facets = k(queue, 'active_facets');
-    local round_robin   = k(queue, 'facet_queue');
-    local facet_pool    = k(queue, 'facet_pool');
+    local priorities     = k(queue, 'priorities');
+    local active_facets  = k(queue, 'active_facets');
+    local round_robin    = k(queue, 'facet_queue');
+    local facet_pool     = k(queue, 'facet_pool');
+    local inflight_total = k(queue, facet .. ':inflight');
+    local inflight_limit = k(queue, 'limit');
 
     -- Delivering the message to a queue is as simple as
     -- pushing it onto the facet's message list, and
     -- incrementing the length of the queue itself.
-    redis.call('lpush', k(queue, facet), message)
+    local length = redis.call('lpush', k(queue, facet), message)
     redis.call('incr', k(queue, 'length'));
 
-    -- If the facet just became active, we need to add
-    -- the facet to the round-robin queue, so it's
-    -- messages will be processed.
-    if redis.call('sadd', active_facets, facet) == 1 then
-      local priority = tonumber(redis.call('hget', priorities, facet)) or 1
 
-      -- If the facet currently has a priority
-      -- we need to jump start the facet by adding
-      -- it to the round-robin queue and updating
-      -- the current priority.
-      if priority > 0 then
-        redis.call('lpush', round_robin, facet);
-        redis.call('hset', facet_pool, facet, 1);
-      
-      -- If the facet has no set priority, just set the
-      -- current priority to zero. Since the facet just
-      -- became active, we can be sure it's already zero
-      -- or undefined.
-      else
-        redis.call('hset', facet_pool, facet, 0);
-      end
+    -- Manage facet queue and active facets
+    local current       = tonumber(redis.call('hget', facet_pool, facet)) or 0;
+    local priority      = tonumber(redis.call('hget', priorities, facet)) or 1;
+    local inflight_cur  = tonumber(redis.call('get', inflight_total)) or 0;
+    local inflight_max  = tonumber(redis.call('get', inflight_limit)) or 0;
+
+    local n = 0
+
+    -- redis.log(redis.LOG_WARNING, current.."/"..length.."/"..priority.."/"..inflight_max.."/"..inflight_cur);
+
+    if inflight_max > 0 then
+      n = math.min(length, priority, inflight_max - inflight_cur);
+    else
+      n = math.min(length, priority);
     end
+
+    -- redis.log(redis.LOG_WARNING, "PUSH: "..current.."/"..n);
+
+    if n > current then
+      -- redis.log(redis.LOG_WARNING, "growing");
+      redis.call('lpush', round_robin, facet);
+      redis.call('hset', facet_pool, facet, current + 1);
+    end
+
+    redis.call('sadd', active_facets, facet)
   end
 end
 

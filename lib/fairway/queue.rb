@@ -46,7 +46,7 @@ module Fairway
     end
 
     def pull
-      scripts.fairway_pull(@queue_names.shuffle.uniq)
+      scripts.fairway_pull(Time.now.to_i, -1, @queue_names.shuffle.uniq)
     end
 
     def ==(other)

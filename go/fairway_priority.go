@@ -17,7 +17,7 @@ local facet_pool  = k(queue, 'facet_pool');
 
 -- Find the current state of the facet for the queue
 local priority = tonumber(redis.call('hget', priorities, facet)) or 1;
-local current  = tonumber(redis.call('hget', facet_pool, facet));
+local current  = tonumber(redis.call('hget', facet_pool, facet)) or 0;
 
 -- If priority is currently zero, we need to jump
 -- start the facet by adding it to the round-robin
@@ -31,6 +31,5 @@ end
 -- set the new priority, and the real priority
 -- will update lazily on pull.
 redis.call('hset', priorities, facet, new_priority);
-
 `
 }

@@ -54,7 +54,7 @@ module Fairway
       let(:scripts) { Scripts.new(redis, "foo") }
 
       it "runs the script" do
-        scripts.fairway_pull("namespace", "name")
+        scripts.fairway_pull(Time.now.to_i, -1, "name")
       end
 
       context "when the script does not exist" do
@@ -63,7 +63,7 @@ module Fairway
             conn.script(:flush)
           end
 
-          scripts.fairway_pull("namespace", "name")
+          scripts.fairway_pull(Time.now.to_i, -1, "name")
         end
       end
     end

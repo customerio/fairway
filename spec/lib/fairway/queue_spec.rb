@@ -139,7 +139,7 @@ module Fairway
         it "randomized order of queues attempted to reduce starvation" do
           order = {}
 
-          queue.connection.scripts.stub(:fairway_pull) do |queues|
+          queue.connection.scripts.stub(:fairway_pull) do |timstamp, wait, queues|
             order[queues.join(":")] ||= 0
             order[queues.join(":")] += 1
           end
@@ -158,7 +158,7 @@ module Fairway
 
           order = {}
 
-          queue.connection.scripts.stub(:fairway_pull) do |queues|
+          queue.connection.scripts.stub(:fairway_pull) do |timestamp, wait, queues|
             order[queues.join(":")] ||= 0
             order[queues.join(":")] += 1
           end
@@ -286,17 +286,13 @@ module Fairway
         queue.pull.should == ["myqueue", message1.to_json]
       end
 
-      it "defaults current priority to 1 if currently nil (migration from 0.0.x to 0.1.x scenario)" do
+      it "defaults current priority to 1 if currently nil" do
         connection.deliver(message1)
         connection.deliver(message1)
         connection.deliver(message2)
         connection.deliver(message2)
         connection.deliver(message2)
         connection.deliver(message1)
-
-        connection.redis.with do |conn|
-          conn.del("myqueue:facet_pool")
-        end
 
         queue.pull.should == ["myqueue", message1.to_json]
         queue.pull.should == ["myqueue", message2.to_json]

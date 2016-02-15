@@ -16,6 +16,5 @@ for index, queue_name in ipairs(ARGV) do
     return {queue_name, message};
   end
 end
-
 `
 }

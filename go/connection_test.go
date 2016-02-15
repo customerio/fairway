@@ -97,6 +97,7 @@ func ConnectionSpec(c gospec.Context) {
 			defer r.Close()
 
 			r.Do("sadd", "fairway:myqueue:active_facets", "default")
+			r.Do("hset", "fairway:myqueue:facet_pool", "default", "1")
 
 			msg, _ := NewMsg(map[string]string{})
 

@@ -88,6 +88,7 @@ module Fairway
         it "doesn't push onto to facet queue if currently active" do
           redis.with do |conn|
             conn.sadd("myqueue:active_facets", "1")
+            conn.hset("myqueue:facet_pool", "1", "1")
             connection.deliver(message)
             conn.llen("myqueue:facet_queue").should == 0
           end
