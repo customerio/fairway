@@ -2,7 +2,8 @@ package fairway
 
 import (
 	"encoding/json"
-	"github.com/customerio/go-simplejson"
+
+	"github.com/bitly/go-simplejson"
 )
 
 type Msg struct {
