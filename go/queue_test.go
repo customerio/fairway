@@ -62,6 +62,87 @@ func QueueSpec(c gospec.Context) {
 			c.Expect(message.json(), Equals, msg2.json())
 		})
 
+		c.Specify("skips over facets in invalid state", func() {
+			config.Facet = func(msg *Msg) string {
+				str, _ := msg.Get("facet").String()
+				return str
+			}
+
+			msg1, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]string{"facet": "2", "name": "mymessage2"})
+			msg3, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage3"})
+
+			conn.Deliver(msg1)
+			conn.Deliver(msg2)
+			conn.Deliver(msg3)
+
+			r := config.Pool.Get()
+			defer r.Close()
+
+			count, _ := redis.Int(r.Do("llen", "fairway:myqueue:1"))
+			c.Expect(count, Equals, 2)
+			count, _ = redis.Int(r.Do("llen", "fairway:myqueue:2"))
+			c.Expect(count, Equals, 1)
+			count, _ = redis.Int(r.Do("scard", "fairway:myqueue:active_facets"))
+			c.Expect(count, Equals, 2)
+			count, _ = redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
+			c.Expect(count, Equals, 2)
+			count, _ = redis.Int(r.Do("hget", "fairway:myqueue:facet_pool", "1"))
+			c.Expect(count, Equals, 1)
+			count, _ = redis.Int(r.Do("hget", "fairway:myqueue:facet_pool", "2"))
+			c.Expect(count, Equals, 1)
+
+			queueName, message := queue.Pull(-1)
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(message.json(), Equals, msg1.json())
+
+			count, _ = redis.Int(r.Do("llen", "fairway:myqueue:1"))
+			c.Expect(count, Equals, 1)
+			count, _ = redis.Int(r.Do("llen", "fairway:myqueue:2"))
+			c.Expect(count, Equals, 1)
+			count, _ = redis.Int(r.Do("scard", "fairway:myqueue:active_facets"))
+			c.Expect(count, Equals, 2)
+			count, _ = redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
+			c.Expect(count, Equals, 2)
+			count, _ = redis.Int(r.Do("hget", "fairway:myqueue:facet_pool", "1"))
+			c.Expect(count, Equals, 1)
+			count, _ = redis.Int(r.Do("hget", "fairway:myqueue:facet_pool", "2"))
+			c.Expect(count, Equals, 1)
+
+			// We expect a message to be in here
+			r.Do("del", "fairway:myqueue:2")
+
+			count, _ = redis.Int(r.Do("llen", "fairway:myqueue:1"))
+			c.Expect(count, Equals, 1)
+			count, _ = redis.Int(r.Do("llen", "fairway:myqueue:2"))
+			c.Expect(count, Equals, 0)
+			count, _ = redis.Int(r.Do("scard", "fairway:myqueue:active_facets"))
+			c.Expect(count, Equals, 2)
+			count, _ = redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
+			c.Expect(count, Equals, 2)
+			count, _ = redis.Int(r.Do("hget", "fairway:myqueue:facet_pool", "1"))
+			c.Expect(count, Equals, 1)
+			count, _ = redis.Int(r.Do("hget", "fairway:myqueue:facet_pool", "2"))
+			c.Expect(count, Equals, 1)
+
+			queueName, message = queue.Pull(-1)
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(message.json(), Equals, msg3.json())
+
+			count, _ = redis.Int(r.Do("llen", "fairway:myqueue:1"))
+			c.Expect(count, Equals, 0)
+			count, _ = redis.Int(r.Do("llen", "fairway:myqueue:2"))
+			c.Expect(count, Equals, 0)
+			count, _ = redis.Int(r.Do("scard", "fairway:myqueue:active_facets"))
+			c.Expect(count, Equals, 0)
+			count, _ = redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
+			c.Expect(count, Equals, 0)
+			count, _ = redis.Int(r.Do("hget", "fairway:myqueue:facet_pool", "1"))
+			c.Expect(count, Equals, 0)
+			count, _ = redis.Int(r.Do("hget", "fairway:myqueue:facet_pool", "2"))
+			c.Expect(count, Equals, 0)
+		})
+
 		c.Specify("places pulled message on inflight sorted set until acknowledged", func() {
 			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
 

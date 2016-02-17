@@ -36,7 +36,6 @@ for i = 1, #registered_queues, 2 do
     local length = redis.call('lpush', k(queue, facet), message)
     redis.call('incr', k(queue, 'length'));
 
-
     -- Manage facet queue and active facets
     local current       = tonumber(redis.call('hget', facet_pool, facet)) or 0;
     local priority      = tonumber(redis.call('hget', priorities, facet)) or 1;

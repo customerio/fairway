@@ -49,8 +49,9 @@ if removed > 0 then
     redis.call('hset', facet_pool, facet, current + 1);
   end
 
-  if (current == 0 and length == 0 and inflight_cur == 0 and n == 0) then
+  if (length == 0 and inflight_cur == 0 and n == 0) then
     redis.call('del', inflight_total);
+    redis.call('hdel', facet_pool, facet);
     redis.call('srem', active_facets, facet);
   end
 end
