@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    fairway (0.3.1)
+    fairway (0.3.3)
       activesupport
       connection_pool
       redis

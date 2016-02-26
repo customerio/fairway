@@ -23,7 +23,7 @@ for i = 1, #registered_queues, 2 do
     local active_facets  = k(queue, 'active_facets');
     local round_robin    = k(queue, 'facet_queue');
     local facet_pool     = k(queue, 'facet_pool');
-    local inflight_total = k(queue, facet .. ':inflight');
+    local inflight_facet = k(queue, facet .. ':inflight');
     local inflight_limit = k(queue, 'limit');
 
     -- Delivering the message to a queue is as simple as
@@ -35,7 +35,7 @@ for i = 1, #registered_queues, 2 do
     -- Manage facet queue and active facets
     local current       = tonumber(redis.call('hget', facet_pool, facet)) or 0;
     local priority      = tonumber(redis.call('hget', priorities, facet)) or 1;
-    local inflight_cur  = tonumber(redis.call('get', inflight_total)) or 0;
+    local inflight_cur  = tonumber(redis.call('scard', inflight_facet)) or 0;
     local inflight_max  = tonumber(redis.call('get', inflight_limit)) or 0;
 
     local n = 0

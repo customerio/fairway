@@ -21,14 +21,14 @@ local pull = function (queue)
     -- has at least one message available to be pulled
     -- from it's message queue.
     local messages       = k(queue, facet);
-    local inflight_total = k(queue, facet .. ':inflight');
+    local inflight_facet = k(queue, facet .. ':inflight');
 
     message = redis.call('rpop', messages);
 
     if message then
       if wait ~= -1 then
         redis.call('zadd', inflight, timestamp + wait, message);
-        redis.call('incr', inflight_total);
+        redis.call('sadd', inflight_facet, message);
       end
 
       redis.call('decr', k(queue, 'length'));
@@ -45,12 +45,12 @@ local manage = function (queue, facet)
   local priorities     = k(queue, 'priorities');
   local facet_pool     = k(queue, 'facet_pool');
   local messages       = k(queue, facet);
-  local inflight_total = k(queue, facet .. ':inflight');
+  local inflight_facet = k(queue, facet .. ':inflight');
 
   local current       = tonumber(redis.call('hget', facet_pool, facet)) or 0;
   local priority      = tonumber(redis.call('hget', priorities, facet)) or 1;
   local length        = redis.call('llen', messages);
-  local inflight_cur  = tonumber(redis.call('get', inflight_total)) or 0;
+  local inflight_cur  = tonumber(redis.call('scard', inflight_facet)) or 0;
   local inflight_max  = tonumber(redis.call('get', inflight_limit)) or 0;
   
   local n = 0
@@ -79,7 +79,7 @@ local manage = function (queue, facet)
   end
   
   if (length == 0 and inflight_cur == 0 and n == 0) then
-    redis.call('del', inflight_total);
+    redis.call('del', inflight_facet);
     redis.call('hdel', facet_pool, facet);
     redis.call('srem', active_facets, facet);
   end
@@ -130,4 +130,3 @@ for i, queue in ipairs(ARGV) do
     return {queue, message};
   end
 end
-

@@ -17,18 +17,19 @@ local round_robin    = k(queue, 'facet_queue');
 local facet_pool     = k(queue, 'facet_pool');
 local inflight       = k(queue, 'inflight');
 local messages       = k(queue, facet);
-local inflight_total = k(queue, facet .. ':inflight');
+local inflight_facet = k(queue, facet .. ':inflight');
 local inflight_limit = k(queue, 'limit');
 local priorities     = k(queue, 'priorities');
 
-local removed = tonumber(redis.call('zrem', inflight, message))
+local removed = tonumber(redis.call('zrem', inflight, message));
+redis.call('srem', inflight_facet, message);
 
 if removed > 0 then
   -- Manage facet queue and active facets
   local current       = tonumber(redis.call('hget', facet_pool, facet)) or 0;
   local priority      = tonumber(redis.call('hget', priorities, facet)) or 1;
   local length        = redis.call('llen', messages);
-  local inflight_cur  = tonumber(redis.call('decr', inflight_total)) or 0;
+  local inflight_cur  = tonumber(redis.call('scard', inflight_facet)) or 0;
   local inflight_max  = tonumber(redis.call('get', inflight_limit)) or 0;
 
   local n = 0
@@ -50,7 +51,7 @@ if removed > 0 then
   end
 
   if (length == 0 and inflight_cur == 0 and n == 0) then
-    redis.call('del', inflight_total);
+    redis.call('del', inflight_facet);
     redis.call('hdel', facet_pool, facet);
     redis.call('srem', active_facets, facet);
   end
