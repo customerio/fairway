@@ -23,8 +23,8 @@ for i = 1, #registered_queues, 2 do
     local active_facets  = k(queue, 'active_facets');
     local round_robin    = k(queue, 'facet_queue');
     local facet_pool     = k(queue, 'facet_pool');
-    -- local inflight_facet = k(queue, facet .. ':inflight');
-    -- local inflight_limit = k(queue, 'limit');
+    local inflight_facet = k(queue, facet .. ':inflight');
+    local inflight_limit = k(queue, 'limit');
 
     -- Delivering the message to a queue is as simple as
     -- pushing it onto the facet's message list, and
@@ -35,18 +35,18 @@ for i = 1, #registered_queues, 2 do
     -- Manage facet queue and active facets
     local current       = tonumber(redis.call('hget', facet_pool, facet)) or 0;
     local priority      = tonumber(redis.call('hget', priorities, facet)) or 1;
-    -- local inflight_cur  = tonumber(redis.call('scard', inflight_facet)) or 0;
-    -- local inflight_max  = tonumber(redis.call('get', inflight_limit)) or 0;
+    local inflight_cur  = tonumber(redis.call('scard', inflight_facet)) or 0;
+    local inflight_max  = tonumber(redis.call('get', inflight_limit)) or 0;
 
     local n = 0
 
     -- redis.log(redis.LOG_WARNING, current.."/"..length.."/"..priority.."/"..inflight_max.."/"..inflight_cur);
 
-    -- if inflight_max > 0 then
-    --   n = math.min(length, priority, inflight_max - inflight_cur);
-    -- else
+    if inflight_max > 0 then
+      n = math.min(length, priority, inflight_max - inflight_cur);
+    else
       n = math.min(length, priority);
-    -- end
+    end
 
     -- redis.log(redis.LOG_WARNING, "PUSH: "..current.."/"..n);
 
