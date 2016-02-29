@@ -4,13 +4,14 @@ func FairwayPull() string {
 	return `
 local namespace = KEYS[1];
 local timestamp = tonumber(KEYS[2]);
-local wait = tonumber(KEYS[3]);
+local n = tonumber(KEYS[3]);
+local wait = tonumber(KEYS[4]);
 
 local k = function (queue, subkey)
   return namespace .. queue .. ':' .. subkey;
 end
 
-local pull = function (queue)
+local pull = function (queue, n)
   local round_robin    = k(queue, 'facet_queue');
   local inflight       = k(queue, 'inflight');
 
@@ -18,7 +19,7 @@ local pull = function (queue)
   -- This list guarantees each active facet will have a
   -- message pulled from the queue every time through..
   local facet = redis.call('rpop', round_robin);
-  local message = nil
+  local msgs = {};
 
   if facet then
     -- If we found an active facet, we know the facet
@@ -27,19 +28,23 @@ local pull = function (queue)
     local messages       = k(queue, facet);
     local inflight_facet = k(queue, facet .. ':inflight');
 
-    message = redis.call('rpop', messages);
+    for i = 1, n, 1 do
+      local msg = redis.call('rpop', messages);
 
-    if message then
-      if wait ~= -1 then
-        redis.call('zadd', inflight, timestamp + wait, message);
-        redis.call('sadd', inflight_facet, message);
+      if msg then
+        if wait ~= -1 then
+          redis.call('zadd', inflight, timestamp + wait, msg);
+          redis.call('sadd', inflight_facet, msg);
+        end
+
+        table.insert(msgs, msg);
       end
-
-      redis.call('decr', k(queue, 'length'));
     end
+
+    redis.call('decrby', k(queue, 'length'), #msgs);
   end
 
-  return {facet, message};
+  return {facet, msgs};
 end
 
 local manage = function (queue, facet)
@@ -99,39 +104,50 @@ for i, queue in ipairs(ARGV) do
   if wait ~= -1 then
     -- Check if any current inflight messages
     -- have been inflight for a long time.
-    local inflightmessage = redis.call('zrange', inflight, 0, 0, 'WITHSCORES');
+    local inflightmessages = redis.call('zrange', inflight, 0, n, 'WITHSCORES');
+
+    local msgs = {}
 
     -- If we have an inflight message and it's score
     -- is less than the current pull timestamp, reset
     -- the inflight score for the the message and resend.
-    if #inflightmessage > 0 then
-      if tonumber(inflightmessage[2]) <= timestamp then
-        redis.call('zadd', inflight, timestamp + wait, inflightmessage[1]);
-        return {queue, inflightmessage[1]}
+    if #inflightmessages > 0 then
+      for i = 1, #inflightmessages, 2 do
+        local msg = inflightmessages[i];
+        local ts  = tonumber(inflightmessages[i+1]);
+
+        if tonumber(ts) <= timestamp then
+          redis.call('zadd', inflight, timestamp + wait, msg);
+          table.insert(msgs, msg);
+        end
       end
+    end
+
+    if #msgs > 0 then
+      return {queue, msgs}
     end
   end
 
-  local pulled = pull(queue);
+  local pulled = pull(queue, n);
   local facet = pulled[1];
-  local message = pulled[2];
+  local msgs = pulled[2];
 
   if facet then
     manage(queue, facet);
     
-    -- if message then
+    -- if #msgs > 0 then
     -- else
     --   -- TODO loop through until we find a message
     --   pulled = pull(queue);
     --   facet = pulled[1];
-    --   message = pulled[2]; 		  
+    --   message = pulled[2];       
     
     --   if facet then
     --     manage(queue, facet);
     --   end
     -- end
 
-    return {queue, message};
+    return {queue, msgs};
   end
 end
 `

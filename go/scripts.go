@@ -75,22 +75,35 @@ func (s *scripts) length(queue string) (int, error) {
 	return redis.Int(conn.Do("get", s.namespace()+queue+":length"))
 }
 
-func (s *scripts) pull(queueName string, wait int) (string, *Msg) {
+func (s *scripts) pull(queueName string, n, wait int) (string, []*Msg) {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
 
-	script := s.findScript(FairwayPull, 3)
+	script := s.findScript(FairwayPull, 4)
 
-	result, err := redis.Strings(script.Do(conn, s.namespace(), int(time.Now().Unix()), wait, queueName))
+	if n <= 0 {
+		n = 1
+	}
 
-	if err != nil {
+	r, err := script.Do(conn, s.namespace(), int(time.Now().Unix()), n, wait, queueName)
+	if err != nil || r == nil {
 		return "", nil
 	}
 
-	queue := result[0]
-	message, _ := NewMsgFromString(result[1])
+	result := r.([]interface{})
 
-	return queue, message
+	queue := string(result[0].([]byte))
+
+	messages := make([]*Msg, 0, len(result[1].([]interface{})))
+
+	for _, m := range result[1].([]interface{}) {
+		if m != nil {
+			msg, _ := NewMsgFromString(string(m.([]byte)))
+			messages = append(messages, msg)
+		}
+	}
+
+	return queue, messages
 }
 
 func (s *scripts) inflight(queueName string) []string {

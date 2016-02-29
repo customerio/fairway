@@ -18,7 +18,19 @@ func (q *Queue) Length() (int, error) {
 }
 
 func (q *Queue) Pull(resendTimeframe int) (string, *Msg) {
-	return q.conn.Configuration().scripts().pull(q.name, resendTimeframe)
+	name, msgs := q.conn.Configuration().scripts().pull(q.name, 1, resendTimeframe)
+
+	var m *Msg
+
+	if len(msgs) > 0 {
+		m = msgs[0]
+	}
+
+	return name, m
+}
+
+func (q *Queue) PullN(n, resendTimeframe int) (string, []*Msg) {
+	return q.conn.Configuration().scripts().pull(q.name, n, resendTimeframe)
 }
 
 func (q *Queue) Inflight() []string {
