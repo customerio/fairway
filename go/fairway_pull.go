@@ -82,7 +82,7 @@ local manage = function (queue, facet)
     redis.call('lpush', round_robin, facet);
     redis.call('lpush', round_robin, facet);
     redis.call('hset', facet_pool, facet, current + 1);
-  else
+  elseif n > 0 then
     -- redis.log(redis.LOG_WARNING, "maintaining");
     redis.call('lpush', round_robin, facet);
   end
