@@ -809,6 +809,17 @@ func QueueSpec(c gospec.Context) {
 			c.Expect(messages[0].json(), Equals, msg1.json())
 			c.Expect(messages[1].json(), Equals, msg2.json())
 
+			queueName, messages = queue.PullN(1, 0)
+			c.Expect(len(messages), Equals, 1)
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(messages[0].json(), Equals, msg1.json())
+
+			queueName, messages = queue.PullN(2, 0)
+			c.Expect(len(messages), Equals, 2)
+			c.Expect(queueName, Equals, "myqueue")
+			c.Expect(messages[0].json(), Equals, msg1.json())
+			c.Expect(messages[1].json(), Equals, msg2.json())
+
 			queueName, messages = queue.PullN(2, 10)
 			c.Expect(len(messages), Equals, 2)
 			c.Expect(queueName, Equals, "myqueue")

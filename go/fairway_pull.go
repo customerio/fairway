@@ -104,7 +104,7 @@ for i, queue in ipairs(ARGV) do
   if wait ~= -1 then
     -- Check if any current inflight messages
     -- have been inflight for a long time.
-    local inflightmessages = redis.call('zrange', inflight, 0, n, 'WITHSCORES');
+    local inflightmessages = redis.call('zrange', inflight, 0, n-1, 'WITHSCORES');
 
     local msgs = {}
 
@@ -119,6 +119,7 @@ for i, queue in ipairs(ARGV) do
         if tonumber(ts) <= timestamp then
           redis.call('zadd', inflight, timestamp + wait, msg);
           table.insert(msgs, msg);
+
         end
       end
     end
