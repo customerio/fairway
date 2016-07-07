@@ -9,11 +9,23 @@ import (
 
 type scripts struct {
 	config *Config
-	data   map[string]*redis.Script
+
+	deliverScript  *redis.Script
+	pullScript     *redis.Script
+	inflightScript *redis.Script
+	pingScript     *redis.Script
+	ackScript      *redis.Script
 }
 
 func newScripts(config *Config) *scripts {
-	return &scripts{config, make(map[string]*redis.Script)}
+	return &scripts{
+		config:         config,
+		deliverScript:  redis.NewScript(1, FairwayDeliver()),
+		pullScript:     redis.NewScript(4, FairwayPull()),
+		inflightScript: redis.NewScript(1, FairwayInflight()),
+		pingScript:     redis.NewScript(3, FairwayPing()),
+		ackScript:      redis.NewScript(1, FairwayAck()),
+	}
 }
 
 func (s *scripts) namespace() string {
@@ -51,9 +63,7 @@ func (s *scripts) deliver(channel, facet string, msg *Msg) error {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
 
-	script := s.findScript(FairwayDeliver, 1)
-
-	_, err := script.Do(conn, s.namespace(), channel, facet, msg.json())
+	_, err := s.deliverScript.Do(conn, s.namespace(), channel, facet, msg.json())
 
 	return err
 }
@@ -62,9 +72,7 @@ func (s *scripts) deliverBytes(channel, facet string, msg []byte) error {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
 
-	script := s.findScript(FairwayDeliver, 1)
-
-	_, err := script.Do(conn, s.namespace(), channel, facet, string(msg))
+	_, err := s.deliverScript.Do(conn, s.namespace(), channel, facet, string(msg))
 
 	return err
 }
@@ -79,13 +87,11 @@ func (s *scripts) pull(queueName string, n, wait int) (string, []*Msg) {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
 
-	script := s.findScript(FairwayPull, 4)
-
 	if n <= 0 {
 		n = 1
 	}
 
-	r, err := script.Do(conn, s.namespace(), int(time.Now().Unix()), n, wait, queueName)
+	r, err := s.pullScript.Do(conn, s.namespace(), int(time.Now().Unix()), n, wait, queueName)
 	if err != nil || r == nil {
 		return "", nil
 	}
@@ -110,9 +116,7 @@ func (s *scripts) inflight(queueName string) []string {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
 
-	script := s.findScript(FairwayInflight, 1)
-
-	result, err := redis.Strings(script.Do(conn, s.namespace(), queueName))
+	result, err := redis.Strings(s.inflightScript.Do(conn, s.namespace(), queueName))
 
 	if err != nil {
 		return []string{}
@@ -147,9 +151,8 @@ func (s *scripts) ping(queueName string, message *Msg, wait int) error {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
 
-	script := s.findScript(FairwayPing, 3)
-
-	_, err := redis.Strings(script.Do(conn, s.namespace(), int(time.Now().Unix()), wait, queueName, message.Original))
+	_, err := redis.Strings(s.pingScript.Do(conn, s.namespace(), int(time.Now().Unix()),
+		wait, queueName, message.Original))
 
 	return err
 }
@@ -158,19 +161,7 @@ func (s *scripts) ack(queueName string, facet string, message *Msg) error {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
 
-	script := s.findScript(FairwayAck, 1)
-
-	_, err := redis.Strings(script.Do(conn, s.namespace(), queueName, facet, message.Original))
+	_, err := redis.Strings(s.ackScript.Do(conn, s.namespace(), queueName, facet, message.Original))
 
 	return err
-}
-
-func (s *scripts) findScript(script func() string, keyCount int) *redis.Script {
-	content := script()
-
-	if s.data[content] == nil {
-		s.data[content] = redis.NewScript(keyCount, content)
-	}
-
-	return s.data[content]
 }
