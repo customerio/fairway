@@ -23,7 +23,8 @@ module Fairway
         pool.with do |conn|
           begin
             return yield(conn)
-          rescue *EXCEPTIONS
+          rescue *EXCEPTIONS => e
+            puts "FAIRWAY WITH EXCEPTION: #{e}"
             valid_pools -= [pool]
           end
         end
@@ -32,12 +33,22 @@ module Fairway
       raise CannotConnect.new
     end
 
-    def with_each(&block)
+    def with_each_running(&block)
       @pools.shuffle.each do |pool|
         pool.with do |conn|
           begin
             yield(conn)
+          rescue *EXCEPTIONS => e
+            puts "FAIRWAY WITH EACH RUNNING EXCEPTION: #{e}"
           end
+        end
+      end
+    end
+
+    def with_each(&block)
+      @pools.shuffle.each do |pool|
+        pool.with do |conn|
+          yield(conn)
         end
       end
     end
