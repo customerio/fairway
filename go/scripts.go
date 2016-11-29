@@ -63,7 +63,7 @@ func (s *scripts) deliver(channel, facet string, msg *Msg) error {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
 
-	_, err := s.deliverScript.Do(conn, s.namespace(), channel, facet, string(msg.Original))
+	_, err := s.deliverScript.Do(conn, s.namespace(), channel, facet, msg.Original)
 
 	return err
 }
