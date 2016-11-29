@@ -63,7 +63,7 @@ func (s *scripts) deliver(channel, facet string, msg *Msg) error {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
 
-	_, err := s.deliverScript.Do(conn, s.namespace(), channel, facet, msg.json())
+	_, err := s.deliverScript.Do(conn, s.namespace(), channel, facet, string(msg.Original))
 
 	return err
 }
@@ -104,7 +104,7 @@ func (s *scripts) pull(queueName string, n, wait int) (string, []*Msg) {
 
 	for _, m := range result[1].([]interface{}) {
 		if m != nil {
-			msg, _ := NewMsgFromString(string(m.([]byte)))
+			msg, _ := NewMsgFromBytes(m.([]byte))
 			messages = append(messages, msg)
 		}
 	}
