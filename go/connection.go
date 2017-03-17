@@ -6,6 +6,7 @@ type Connection interface {
 	Channel(*Msg) string
 	Deliver(*Msg) error
 	DeliverBytes(channel, facet string, bytes []byte) error
+	SetPriority(channel, facet string, priority int) error
 	Configuration() *Config
 }
 
@@ -45,8 +46,8 @@ func (c *conn) DeliverBytes(channel, facet string, msg []byte) error {
 	return c.scripts.deliverBytes(channel, facet, msg)
 }
 
-func (c *conn) SetPriority(queue, facet string, priority int) error {
-	return c.scripts.priorityScript(queue, facet, priority)
+func (c *conn) SetPriority(channel, facet string, priority int) error {
+	return c.scripts.priorityScript(channel, facet, priority)
 }
 
 func (c *conn) Configuration() *Config {
