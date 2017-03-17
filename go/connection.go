@@ -47,7 +47,7 @@ func (c *conn) DeliverBytes(channel, facet string, msg []byte) error {
 }
 
 func (c *conn) SetPriority(channel, facet string, priority int) error {
-	return c.scripts.priorityScript(channel, facet, priority)
+	return c.scripts.setPriority(channel, facet, priority)
 }
 
 func (c *conn) Configuration() *Config {

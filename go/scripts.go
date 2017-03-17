@@ -168,7 +168,7 @@ func (s *scripts) ack(queueName string, facet string, message *Msg) error {
 	return err
 }
 
-func (s *script) setPriority(queueName string, facet string, priority int) error {
+func (s *scripts) setPriority(queueName string, facet string, priority int) error {
 	conn := s.config.Pool.Get()
 	defer conn.Close()
 
