@@ -15,6 +15,7 @@ type scripts struct {
 	inflightScript *redis.Script
 	pingScript     *redis.Script
 	ackScript      *redis.Script
+	priorityScript *redis.Script
 }
 
 func newScripts(config *Config) *scripts {
@@ -25,6 +26,7 @@ func newScripts(config *Config) *scripts {
 		inflightScript: redis.NewScript(1, FairwayInflight()),
 		pingScript:     redis.NewScript(3, FairwayPing()),
 		ackScript:      redis.NewScript(1, FairwayAck()),
+		priorityScript: redis.NewScript(1, FairwayPriority()),
 	}
 }
 
@@ -162,6 +164,15 @@ func (s *scripts) ack(queueName string, facet string, message *Msg) error {
 	defer conn.Close()
 
 	_, err := redis.Strings(s.ackScript.Do(conn, s.namespace(), queueName, facet, message.Original))
+
+	return err
+}
+
+func (s *script) setPriority(queueName string, facet string, priority int) error {
+	conn := s.config.Pool.Get()
+	defer conn.Close()
+
+	_, err := s.priorityScript.Do(conn, s.namespace(), queueName, facet, priority)
 
 	return err
 }
