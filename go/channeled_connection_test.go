@@ -28,7 +28,7 @@ func ChanneledConnectionSpec(c gospec.Context) {
 			count, _ = redis.Int(r.Do("llen", "fairway:myqueue2:default"))
 			c.Expect(count, Equals, 0)
 
-			msg, _ := NewMsg(map[string]string{"type": "a"})
+			msg, _ := NewMsg(map[string]interface{}{"type": "a"})
 
 			conn.Deliver(msg)
 
@@ -49,9 +49,9 @@ func ChanneledConnectionSpec(c gospec.Context) {
 			count, _ = redis.Int(r.Do("llen", "fairway:myqueue2:default"))
 			c.Expect(count, Equals, 0)
 
-			msg, _ := NewMsg(map[string]string{"type": "a"})
+			msg, _ := NewMsg(map[string]interface{}{"type": "a"})
 
-			conn.DeliverBytes("channel:typea:channel", "default", []byte(msg.json()))
+			conn.DeliverBytes("channel:typea:channel", "default", msg.Original)
 
 			count, _ = redis.Int(r.Do("llen", "fairway:myqueue:default"))
 			c.Expect(count, Equals, 1)

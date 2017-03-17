@@ -8,7 +8,7 @@ import (
 func MsgSpec(c gospec.Context) {
 	c.Specify("NewMsg", func() {
 		c.Specify("returns a new message with body as the content", func() {
-			msg, _ := NewMsg(map[string]string{"hello": "world"})
+			msg, _ := NewMsg(map[string]interface{}{"hello": "world"})
 			c.Expect(msg.json(), Equals, "{\"hello\":\"world\"}")
 		})
 

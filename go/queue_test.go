@@ -17,8 +17,8 @@ func QueueSpec(c gospec.Context) {
 
 	c.Specify("Pull", func() {
 		c.Specify("pulls a message off the queue using FIFO", func() {
-			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
-			msg2, _ := NewMsg(map[string]string{"name": "mymessage2"})
+			msg1, _ := NewMsg(map[string]interface{}{"name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]interface{}{"name": "mymessage2"})
 
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
@@ -69,9 +69,9 @@ func QueueSpec(c gospec.Context) {
 		//		return str
 		//	}
 
-		//	msg1, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage1"})
-		//	msg2, _ := NewMsg(map[string]string{"facet": "2", "name": "mymessage2"})
-		//	msg3, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage3"})
+		//	msg1, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage1"})
+		//	msg2, _ := NewMsg(map[string]interface{}{"facet": "2", "name": "mymessage2"})
+		//	msg3, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage3"})
 
 		//	conn.Deliver(msg1)
 		//	conn.Deliver(msg2)
@@ -145,7 +145,7 @@ func QueueSpec(c gospec.Context) {
 		//})
 
 		c.Specify("places pulled message on inflight sorted set until acknowledged", func() {
-			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
+			msg1, _ := NewMsg(map[string]interface{}{"name": "mymessage1"})
 
 			conn.Deliver(msg1)
 
@@ -164,8 +164,8 @@ func QueueSpec(c gospec.Context) {
 		})
 
 		c.Specify("pulls from inflight message set if messages are unacknowledged", func() {
-			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
-			msg2, _ := NewMsg(map[string]string{"name": "mymessage2"})
+			msg1, _ := NewMsg(map[string]interface{}{"name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]interface{}{"name": "mymessage2"})
 
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
@@ -184,8 +184,8 @@ func QueueSpec(c gospec.Context) {
 		})
 
 		c.Specify("allows puller to ping to keep message inflight", func() {
-			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
-			msg2, _ := NewMsg(map[string]string{"name": "mymessage2"})
+			msg1, _ := NewMsg(map[string]interface{}{"name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]interface{}{"name": "mymessage2"})
 
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
@@ -232,9 +232,9 @@ func QueueSpec(c gospec.Context) {
 				return str
 			}
 
-			msg1, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage1"})
-			msg2, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage2"})
-			msg3, _ := NewMsg(map[string]string{"facet": "2", "name": "mymessage3"})
+			msg1, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage2"})
+			msg3, _ := NewMsg(map[string]interface{}{"facet": "2", "name": "mymessage3"})
 
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
@@ -300,9 +300,9 @@ func QueueSpec(c gospec.Context) {
 				return str
 			}
 
-			msg1, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage1"})
-			msg2, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage2"})
-			msg3, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage3"})
+			msg1, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage2"})
+			msg3, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage3"})
 
 			queue.SetInflightLimit(1)
 
@@ -394,7 +394,7 @@ func QueueSpec(c gospec.Context) {
 			fqueue, _ = redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
 			c.Expect(fqueue, Equals, 0)
 
-			msg4, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage4"})
+			msg4, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage4"})
 
 			conn.Deliver(msg4)
 
@@ -436,9 +436,9 @@ func QueueSpec(c gospec.Context) {
 				return str
 			}
 
-			msg1, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage1"})
-			msg2, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage2"})
-			msg3, _ := NewMsg(map[string]string{"facet": "2", "name": "mymessage3"})
+			msg1, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage2"})
+			msg3, _ := NewMsg(map[string]interface{}{"facet": "2", "name": "mymessage3"})
 
 			queue.SetInflightLimit(0)
 
@@ -470,7 +470,7 @@ func QueueSpec(c gospec.Context) {
 			fqueue, _ = redis.Int(r.Do("llen", "fairway:myqueue:facet_queue"))
 			c.Expect(fqueue, Equals, 0)
 
-			msg4, _ := NewMsg(map[string]string{"facet": "2", "name": "mymessage4"})
+			msg4, _ := NewMsg(map[string]interface{}{"facet": "2", "name": "mymessage4"})
 
 			conn.Deliver(msg4)
 
@@ -515,7 +515,7 @@ func QueueSpec(c gospec.Context) {
 		})
 
 		c.Specify("doesn't place pulled message on inflight sorted set if inflight is disabled", func() {
-			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
+			msg1, _ := NewMsg(map[string]interface{}{"name": "mymessage1"})
 
 			conn.Deliver(msg1)
 
@@ -529,8 +529,8 @@ func QueueSpec(c gospec.Context) {
 		})
 
 		c.Specify("doesn't pull from inflight message set if inflight is disabled", func() {
-			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
-			msg2, _ := NewMsg(map[string]string{"name": "mymessage2"})
+			msg1, _ := NewMsg(map[string]interface{}{"name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]interface{}{"name": "mymessage2"})
 
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
@@ -553,9 +553,9 @@ func QueueSpec(c gospec.Context) {
 				return str
 			}
 
-			msg1, _ := NewMsg(map[string]string{"facet": "1", "name": "my message1"})
-			msg2, _ := NewMsg(map[string]string{"facet": "1", "name": "my message2"})
-			msg3, _ := NewMsg(map[string]string{"facet": "2", "name": "my message3"})
+			msg1, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "my message1"})
+			msg2, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "my message2"})
+			msg3, _ := NewMsg(map[string]interface{}{"facet": "2", "name": "my message3"})
 
 			active, _ := redis.Strings(r.Do("smembers", "fairway:myqueue:active_facets"))
 			c.Expect(len(active), Equals, 0)
@@ -598,7 +598,7 @@ func QueueSpec(c gospec.Context) {
 			r := config.Pool.Get()
 			defer r.Close()
 
-			msg, _ := NewMsg(map[string]string{})
+			msg, _ := NewMsg(map[string]interface{}{})
 			conn.Deliver(msg)
 
 			count, _ := redis.Int(r.Do("scard", "fairway:myqueue:active_facets"))
@@ -611,7 +611,7 @@ func QueueSpec(c gospec.Context) {
 		})
 
 		c.Specify("returns nil if there are no messages to receive", func() {
-			msg, _ := NewMsg(map[string]string{})
+			msg, _ := NewMsg(map[string]interface{}{})
 			conn.Deliver(msg)
 
 			queueName, message := queue.Pull(-1)
@@ -624,9 +624,9 @@ func QueueSpec(c gospec.Context) {
 
 	c.Specify("PullN", func() {
 		c.Specify("pulls a message off the queue using FIFO", func() {
-			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
-			msg2, _ := NewMsg(map[string]string{"name": "mymessage2"})
-			msg3, _ := NewMsg(map[string]string{"name": "mymessage3"})
+			msg1, _ := NewMsg(map[string]interface{}{"name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]interface{}{"name": "mymessage2"})
+			msg3, _ := NewMsg(map[string]interface{}{"name": "mymessage3"})
 
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
@@ -683,9 +683,9 @@ func QueueSpec(c gospec.Context) {
 		//		return str
 		//	}
 
-		//	msg1, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage1"})
-		//	msg2, _ := NewMsg(map[string]string{"facet": "2", "name": "mymessage2"})
-		//	msg3, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage3"})
+		//	msg1, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage1"})
+		//	msg2, _ := NewMsg(map[string]interface{}{"facet": "2", "name": "mymessage2"})
+		//	msg3, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage3"})
 
 		//	conn.Deliver(msg1)
 		//	conn.Deliver(msg2)
@@ -759,9 +759,9 @@ func QueueSpec(c gospec.Context) {
 		//})
 
 		c.Specify("places pulled message on inflight sorted set until acknowledged", func() {
-			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
-			msg2, _ := NewMsg(map[string]string{"name": "mymessage2"})
-			msg3, _ := NewMsg(map[string]string{"name": "mymessage3"})
+			msg1, _ := NewMsg(map[string]interface{}{"name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]interface{}{"name": "mymessage2"})
+			msg3, _ := NewMsg(map[string]interface{}{"name": "mymessage3"})
 
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
@@ -795,9 +795,9 @@ func QueueSpec(c gospec.Context) {
 		})
 
 		c.Specify("pulls from inflight message set if messages are unacknowledged", func() {
-			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
-			msg2, _ := NewMsg(map[string]string{"name": "mymessage2"})
-			msg3, _ := NewMsg(map[string]string{"name": "mymessage3"})
+			msg1, _ := NewMsg(map[string]interface{}{"name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]interface{}{"name": "mymessage2"})
+			msg3, _ := NewMsg(map[string]interface{}{"name": "mymessage3"})
 
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
@@ -832,9 +832,9 @@ func QueueSpec(c gospec.Context) {
 		})
 
 		c.Specify("allows puller to ping to keep message inflight", func() {
-			msg1, _ := NewMsg(map[string]string{"name": "mymessage1"})
-			msg2, _ := NewMsg(map[string]string{"name": "mymessage2"})
-			msg3, _ := NewMsg(map[string]string{"name": "mymessage3"})
+			msg1, _ := NewMsg(map[string]interface{}{"name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]interface{}{"name": "mymessage2"})
+			msg3, _ := NewMsg(map[string]interface{}{"name": "mymessage3"})
 
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
@@ -877,10 +877,10 @@ func QueueSpec(c gospec.Context) {
 				return str
 			}
 
-			msg1, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage1"})
-			msg2, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage2"})
-			msg3, _ := NewMsg(map[string]string{"facet": "2", "name": "mymessage3"})
-			msg4, _ := NewMsg(map[string]string{"facet": "1", "name": "mymessage4"})
+			msg1, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage1"})
+			msg2, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage2"})
+			msg3, _ := NewMsg(map[string]interface{}{"facet": "2", "name": "mymessage3"})
+			msg4, _ := NewMsg(map[string]interface{}{"facet": "1", "name": "mymessage4"})
 
 			conn.Deliver(msg1)
 			conn.Deliver(msg2)
@@ -960,7 +960,7 @@ func QueueSpec(c gospec.Context) {
 		})
 
 		c.Specify("returns empty array if there are no messages to receive", func() {
-			msg, _ := NewMsg(map[string]string{})
+			msg, _ := NewMsg(map[string]interface{}{})
 			conn.Deliver(msg)
 
 			queueName, messages := queue.PullN(1, -1)

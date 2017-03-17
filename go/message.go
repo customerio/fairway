@@ -3,11 +3,12 @@ package fairway
 import (
 	"encoding/json"
 
-	"github.com/bitly/go-simplejson"
+	simplejson "github.com/bitly/go-simplejson"
 )
 
+// Msg is immutable. Don't change it or you'll regret it.
 type Msg struct {
-	Original string
+	Original []byte
 	*simplejson.Json
 }
 
@@ -17,16 +18,14 @@ func NewMsg(body interface{}) (*Msg, error) {
 		return nil, err
 	}
 
-	simplej, err := simplejson.NewJson(bytes)
-	if err != nil {
-		return nil, err
-	}
+	simplej := simplejson.New()
+	simplej.SetPath(nil, body)
 
-	return &Msg{string(bytes), simplej}, nil
+	return &Msg{bytes, simplej}, nil
 }
 
-func NewMsgFromString(body string) (*Msg, error) {
-	simplej, err := simplejson.NewJson([]byte(body))
+func NewMsgFromBytes(body []byte) (*Msg, error) {
+	simplej, err := simplejson.NewJson(body)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +33,24 @@ func NewMsgFromString(body string) (*Msg, error) {
 	return &Msg{body, simplej}, nil
 }
 
-func (m *Msg) json() string {
-	j, _ := m.MarshalJSON()
-	return string(j)
+func NewMsgFromString(s string) (*Msg, error) {
+	return NewMsgFromBytes([]byte(s))
+}
+
+// The fairway message is immutable, it mustn't be changed. These functions
+// are present for testing purposes.
+func (m *Msg) Set(key string, val interface{}) {
+	panic("cannot mutate")
+}
+
+func (j *Msg) SetPath(branch []string, val interface{}) {
+	panic("cannot mutate")
+}
+
+func (j *Msg) Del(key string) {
+	panic("cannot mutate")
+}
+
+func (j *Msg) json() string {
+	return string(j.Original)
 }
